@@ -1,0 +1,555 @@
+import React, { useState } from 'react';
+import { Search, History, CheckCircle2, AlertCircle, Trash2, Loader2, Lock } from 'lucide-react';
+import { AppData } from '../types';
+import { allcheck } from '../src/utils/mathHelpers';
+
+interface PaymentHistoryProps {
+  data: AppData;
+  onUpdate: (data: AppData) => void;
+  //onRefreshData: () => Promise<void>; // Hàm tải lại dữ liệu từ component cha sau khi lưu thành công
+}
+
+const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data }) => {
+  const [selectedClass, setSelectedClass] = useState<string>('Lop12');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isPayMode, setIsPayMode] = useState(false);  
+  const [isResetting, setIsResetting] = useState(false);
+  const [lanPage, setLanPage] = useState(0);
+
+  // --- CÁC STATE CHO FORM GHI HỌC PHÍ ---
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [inputLan, setInputLan] = useState('L1');
+  const [inputAmount, setInputAmount] = useState('600000');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isAuthorizedV, setIsAuthorizedV] = useState(false);
+  const [password, setPassword] = useState('');
+  
+  const handleAuthV = async () => {
+  if (!password.trim()) {
+    alert('Vui lòng nhập mật khẩu!');
+    return;
+  }  
+  setIsChecking(true);
+  try {
+    const key = String(password).toLowerCase().trim();
+    if (key === "16868688") {       
+      setIsAuthorizedV(true);
+      alert('Xác thực thành công!');       
+      // Thêm logic chuyển hướng hoặc set login state của bạn ở đây (nếu có)
+    } else {
+      alert('Sai mật khẩu rồi nhé bạn! (^__^)');
+    }   
+  } catch (error) {
+    console.error("Lỗi xác thực:", error);
+    alert('Đã xảy ra lỗi trong quá trình xác thực.');
+  } finally {
+    // block finally này luôn chạy, giúp đảm bảo tắt trạng thái loading bất kể đúng/sai/lỗi
+    setIsChecking(false); 
+  }
+};
+
+
+  // 1. Lấy danh sách học sinh gốc của lớp được chọn
+  const currentStudents = data.sheets[selectedClass]?.students || [];
+
+  // 2. Trích xuất dữ liệu từ sheet ThuTien đã nạp trong data
+  const rawThuTien = data.sheets['ThuTien']?.students || []; 
+
+  // Lọc riêng bản ghi của lớp hiện tại
+  const classNumber = selectedClass.replace('Lop', '');
+  const classRecords = rawThuTien.filter((r: any) => {
+  if (!r || !r.lop) return false;
+  
+  // Trích xuất chuỗi số đầu tiên xuất hiện trong r.lop (Ví dụ: "12A1" -> "12")
+  const match = String(r.lop).match(/^\d+/);
+  const extractedClassNum = match ? match[0] : '';
+  
+  // So sánh phần số vừa trích xuất với classNumber của lớp đang chọn
+  return String(extractedClassNum) === String(classNumber);
+});
+  //const classRecords = rawThuTien.filter((r: any) => allcheck(r.lop, classNumber)); // String(r.lop).startsWith(classNumber));
+
+  // 3. Tìm số Lần nộp (L) lớn nhất thực tế đang có để vẽ cột động
+  const maxLanNop = classRecords.reduce((max: number, r: any) => {
+    const num = parseInt(String(r.lanNop).replace('L', ''), 10);
+    return !isNaN(num) && num > max ? num : max;
+  }, 1);
+
+  // Tạo mảng tuần tự các đợt nộp: [1, 2, 3, ...]
+  const currentLans = Array.from({ length: maxLanNop }, (_, i) => i + 1);
+
+  // 4. Lọc tìm kiếm học sinh theo tên
+  // 4. Lọc tìm kiếm học sinh theo Tên hoặc Mã HS (Code) để chính xác tuyệt đối
+  const filteredStudents = currentStudents.filter(s => {
+    const searchLower = searchTerm.toLowerCase().trim();
+    const matchName = s.name && String(s.name).toLowerCase().includes(searchLower);
+    const matchCode = s.code && String(s.code).toLowerCase().includes(searchLower);
+    const matchClass = s.class && String(s.class).toLowerCase().includes(searchLower);
+    const matchSchool = s.school && String(s.school).toLowerCase().includes(searchLower);
+    return matchName || matchCode || matchClass || matchSchool;
+  });
+  const formatCurrency = (amount: any) => {
+    const num = parseFloat(amount);
+    if (isNaN(num)) return amount;
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+  };
+const LAN_PER_PAGE = 6;
+
+const visibleLans = currentLans.slice(
+  lanPage * LAN_PER_PAGE,
+  (lanPage + 1) * LAN_PER_PAGE
+);
+
+  // --- CÁC HÀM XỬ LÝ CHỨC NĂNG ---
+  const handleOpenPayForm = (student: any) => {
+  const paddedStt = String(student.stt).padStart(2, '0');
+  const fullRawName = `${paddedStt}.${student.name}`; 
+  
+  setSelectedStudent({
+    stt: paddedStt,
+    name: student.name,
+    fullRawName: fullRawName,
+    classDetail: student.class,
+    code: student.code // Lưu code để submit gửi lên
+  });
+  
+  setInputLan('L1'); // Đưa đợt nộp về mặc định L1 khi đổi học sinh
+  
+  const existRecord = classRecords.find((r: any) => {
+    // Sửa: Đối chiếu theo r.code và student.code
+    return allcheck(r.lanNop ,inputLan) && allcheck(r.code, student.code);
+  });
+  const sotien = existRecord ? String(existRecord.soTien) : '600000';
+  setInputAmount(sotien);
+};
+
+  const handleLanChange = (lannop: string) => {
+    setInputLan(lannop);    
+    if (selectedStudent) {
+      const existRecord = classRecords.find((r: any) => {
+        return allcheck(r.lanNop ,lannop) && allcheck(r.code, selectedStudent.code);          
+      });
+    const sotien = existRecord ? String(existRecord.soTien) : '600000';
+    setInputAmount(sotien);
+    }
+  };
+
+  const handleSavePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudent || !inputAmount || !adminPassword) {
+      alert("Vui lòng nhập đầy đủ Số tiền và Mật khẩu cấu hình!");
+      return;
+    }
+
+    const isExist = classRecords.some((r: any) => {
+      return allcheck(r.lanNop ,inputLan) && allcheck(r.code, selectedStudent.code); 
+    });
+
+    if (isExist) {
+      const confirmOverride = window.confirm(
+        `Học sinh [${selectedStudent.name}] đã có dữ liệu đóng tiền ở [${inputLan.replace('L', 'Lần ')}].\n\nThầy có chắc chắn muốn GHI ĐÈ hệ thống để đổi số tiền không?`
+      );
+      if (!confirmOverride) return;
+    }
+     const existRecord = classRecords.find((r: any) => {
+        return allcheck(r.lanNop ,inputLan) && allcheck(r.code, selectedStudent.code);         
+      });
+      const sotien = existRecord ? String(existRecord.soTien) : '600000'; 
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(data.sheetLink, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'addPayment',
+          stt: selectedStudent.stt,
+          name: selectedStudent.fullRawName, 
+          lop: selectedStudent.classDetail || classNumber || "99A",
+          lanNop: inputLan,
+          soTien: Number(inputAmount),
+          code: selectedStudent.code,
+          password: adminPassword
+        })
+      });     
+      const resJson = await response.json();
+      if (resJson.status === 200) {
+        alert(resJson.message || 'Cập nhật học phí thành công!');
+        setSelectedStudent(null);
+        setInputAmount(sotien);
+        setAdminPassword('');        
+      } else {
+        alert('Lỗi: ' + resJson.message);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Không thể kết nối đến hệ thống Sheet!');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  // Xóa dữ liệu nộp tiền của lớp
+  const handleResetTienhoc = async () => {
+    const classNameFormatted = selectedClass.replace("Lop", "Lớp ");
+  // 1. Hiện hộp thoại bắt nhập mật khẩu
+    const inputPassword = window.prompt("VUI LÒNG NHẬP MẬT KHẨU ADMIN Ô C2 ĐỂ XÁC THỰC QUYỀN RESET:");
+    if (inputPassword === null) return; // Bấm hủy
+    if (!inputPassword.trim()) {
+      alert("Mật khẩu không được để trống!");
+      return;
+    }
+
+    // 2. Cảnh báo xác nhận lần cuối trước khi xóa sạch   
+    
+    const confirm1 = window.confirm(`CẢNH BÁO: Bạn có chắc chắn muốn RESET TOÀN BỘ tiền học của lớp ${classNameFormatted}?. Bạn chắc chắn chứ?`);
+    if (!confirm1) return; 
+   
+
+    setIsResetting(true);
+    try {
+      if (data.sheetLink) {
+        const response = await fetch(data.sheetLink, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'resetTienhoc',
+            className: selectedClass,
+            password: inputPassword            
+          })
+        });
+        const result = await response.json();
+        alert(result.message);  
+             
+      } else {
+        alert("Không tìm thấy liên kết Google Sheets!");
+      }
+    } catch (err) {
+      alert("Lỗi xảy ra trong quá trình xóa dữ liệu lớp học.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+if (!isAuthorizedV) {
+    return (
+      <div className="bg-white p-8 rounded-2xl shadow-md max-w-md mx-auto border border-slate-100 flex flex-col items-center">
+        <Lock className="text-amber-500 mb-4" size={32} />
+        <h2 className="text-xl font-bold text-slate-800 mb-6">Xác thực quyền vào hệ thống</h2>
+        <p className="text-slate-500 text-center mb-6">Mật khẩu vào 16...88!</p>
+        <input 
+          type="password" 
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Mật khẩu để vào hệ thống..."
+          onKeyDown={(e) => e.key === 'Enter' && handleAuthV()}
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none mb-4 focus:ring-2 focus:ring-indigo-500"
+        />
+        <button 
+  onClick={handleAuthV} 
+  disabled={isChecking}
+  className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+>
+  {isChecking ? 'Đang xác thực...' : 'Xác nhận'}
+</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Thanh công cụ: Chọn lớp & Tìm kiếm */}
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex gap-1.5 flex-wrap">
+          {Object.keys(data.sheets)
+            .filter(cls => cls.startsWith("Lop"))
+            .sort((a, b) => {
+              const numA = parseInt(a.replace("Lop", ""), 10) || 0;
+              const numB = parseInt(b.replace("Lop", ""), 10) || 0;
+              return numA - numB;
+            })
+            .map(cls => (
+              <button
+                key={cls}
+                type="button"
+                onClick={() => {
+                  setSelectedClass(cls);
+                  setIsPayMode(false);
+                  setSelectedStudent(null);
+                   setLanPage(0);
+                }}
+                className={`px-4 py-2 rounded-xl text-xs md:text-sm font-extrabold transition-all ${
+                  allcheck(selectedClass ,cls) && !isPayMode
+                    ? 'bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-md' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {cls.replace("Lop", "Lớp ")}
+              </button>
+            ))}
+
+          {/* NÚT ĐỔI CHẾ ĐỘ */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsPayMode(!isPayMode);
+              setSelectedStudent(null);
+              setLanPage(0); // thêm
+            }}
+            className={`ml-2 px-4 py-2 rounded-xl text-xs md:text-sm font-extrabold transition-all border ${
+              isPayMode 
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md' 
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+            }`}
+          >
+            💼 {isPayMode ? "Xem Nhật Ký Tổng" : "Update Nộp tiền"}
+          </button>
+          {/* Sửa đoạn nút Reset tiền học: ẩn hoàn toàn nếu isPublic = true */}
+  <button
+    type="button"
+    onClick={handleResetTienhoc}
+    disabled={isResetting || !data.sheetLink}
+    className="bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 shadow-sm"
+    title={`Xóa sạch học sinh lớp ${selectedClass.replace("Lop", "")}`}
+  >
+    {isResetting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+    Reset tiền học
+  </button>
+
+        </div>
+        {currentLans.length > LAN_PER_PAGE && (
+        <div className="flex items-center gap-2">
+  <button
+    disabled={lanPage === 0}
+    onClick={() => setLanPage(p => p - 1)}
+    className="px-3 py-1 rounded-lg bg-slate-100 disabled:opacity-40"
+  >
+    ◀ Trước
+  </button>
+
+  <span className="text-sm font-bold">
+    Lần {lanPage * 6 + 1} - {Math.min((lanPage + 1) * 6, maxLanNop)}
+  </span>
+
+  <button
+    disabled={(lanPage + 1) * 6 >= currentLans.length}
+    onClick={() => setLanPage(p => p + 1)}
+    className="px-3 py-1 rounded-lg bg-slate-100 disabled:opacity-40"
+  >
+    Sau ▶
+  </button>
+</div>
+      )}
+        
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <input
+            type="text"
+            placeholder="Tìm kiếm học sinh..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+          />
+        </div>
+      </div>
+      {/* HIỂN THỊ CHẾ ĐỘ GIỮA HAI BẢNG */}
+      {isPayMode ? (
+        /* CHẾ ĐỘ 1: CẬP NHẬT GHI ĐÈ HỌC PHÍ */
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-4">
+          <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+            <span className="w-2.5 h-5 bg-emerald-600 rounded-sm inline-block"></span>
+            Chế độ cập nhật & Ghi đè Học phí - Lớp {classNumber}
+          </h3>
+
+          {/* Form thao tác ghi tiền */}
+          {selectedStudent && (
+            <form onSubmit={handleSavePaymentSubmit} className="bg-slate-50 p-4 rounded-xl grid grid-cols-2 md:grid-cols-6 gap-3 items-end border border-slate-200 animate-in slide-in-from-top duration-200">
+              <input type="text" name="username" autoComplete="username" value={selectedStudent.fullRawName} readOnly className="hidden" />
+              <div className="col-span-2 md:col-span-1">
+                <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Học sinh chọn</label>
+                <div className="p-2 bg-white rounded-lg border text-sm font-bold text-slate-700 truncate shadow-sm">
+                  {selectedStudent.stt} - {selectedStudent.name} - {selectedStudent.code}
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Lần nộp học phí</label>
+                <select
+                  value={inputLan}
+                  onChange={(e) => handleLanChange(e.target.value)}
+                  className="w-full p-2 bg-white rounded-lg border text-sm font-bold text-slate-700 focus:outline-none shadow-sm"
+                >
+                  {Array.from({ length: 12 }, (_, i) => `L${i + 1}`).map(lan => (
+                    <option key={lan} value={lan}>Lần {lan.replace('L', '')}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Số tiền (VND)</label>
+                <input
+                  type="number"
+                  placeholder="Ví dụ: 150000"
+                  value={inputAmount}
+                  onChange={(e) => setInputAmount(e.target.value)}
+                  className="w-full p-2 bg-white rounded-lg border text-sm font-bold focus:outline-none focus:border-emerald-500 shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-red-500 uppercase mb-1">Mật khẩu Admin Ô C2</label>
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="***"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="w-full p-2 bg-white rounded-lg border text-sm focus:outline-none focus:border-red-500 shadow-sm"
+                />
+              </div>
+              <div className="col-span-2 md:col-span-2 flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg transition-colors disabled:bg-slate-300 shadow-sm"
+                >
+                  {isSubmitting ? 'Đang lưu...' : '💾 Lưu'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStudent(null)}
+                  className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold text-sm rounded-lg transition-colors"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Bảng danh sách học sinh */}
+          <div className="overflow-x-auto border border-slate-100 rounded-xl">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wider">
+                  <th className="p-4 w-16 text-center">STT</th>
+                  <th className="p-4 w-60 text-left">Họ và Tên</th>
+                  <th className="p-4 w-20 text-center">Lớp</th>
+                  <th className="p-4 w-20 text-center">Mã HS</th>
+                  <th className="p-4 w-32 text-center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm">
+                {filteredStudents.length > 0 ? (
+                  filteredStudents.map((student) => {
+                    const studentSttStr = String(student.stt).padStart(2, '0');
+                    const isCurrentSelected = selectedStudent && allcheck(selectedStudent.stt ,studentSttStr);
+                    return (
+                      <tr 
+                        key={student.code} 
+                        className={`transition-colors ${isCurrentSelected ? 'bg-emerald-50/50 font-medium' : 'hover:bg-slate-50/70'}`}
+                      >
+                        <td className="p-4 text-center font-mono font-bold text-slate-400">
+                          {studentSttStr}
+                        </td>
+                        <td className="p-4 w-60 text-left font-bold text-slate-800">
+                          {student.name}
+                        </td>
+                        <td className="p-4 text-center font-mono font-bold text-slate-500">
+                          {student.class}
+                        </td>
+                        <td className="p-4 text-center font-mono font-bold text-slate-500">
+                          {student.code}
+                        </td>
+                        <td className="p-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenPayForm(student)}
+                            className="px-3 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-all shadow-sm"
+                          >
+                            ✏️ Sửa / Ghi tiền
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="p-6 text-center text-slate-400">Không tìm thấy học sinh nào.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        /* CHẾ ĐỘ XEM 2: BẢNG NHẬT KÝ NỘP TIỀN GỐC */
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wider">
+                  <th className="p-4 w-10 text-center">STT</th>
+                  <th className="p-4 w-50 text-center">Họ và Tên</th>
+                  <th className="p-4 w-10 text-center">Lớp</th>
+                  <th className="p-4 w-14 text-center">Mã HS</th>
+                  {visibleLans.map(lan => (
+                    <th key={lan} className="p-4 text-center min-w-[120px]">Lần {lan}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                {filteredStudents.length > 0 ? (
+                  filteredStudents.map((student) => {
+                    const studentSttStr = String(student.stt);
+                    const studentCodeStr = String(student.code);
+
+                    return (
+                      <tr key={student.code} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="p-4 w-10 font-mono font-bold text-slate-400 text-center">{studentSttStr}</td>
+                        <td className="p-4 w-48 font-bold text-slate-800">{student.name}</td>
+                        <td className="p-4 w-10 font-mono font-bold text-slate-400 text-center">{student.class}</td>
+                        <td className="p-4 w-10 font-mono font-bold text-slate-400 text-center">{studentCodeStr}</td>
+                        
+                        {visibleLans.map(lan => {
+                          const record = classRecords.find((r: any) => {
+                            if (!r || !r.code) return false;                            
+                            return r.lanNop === `L${lan}` && allcheck(r.code, student.code);
+                          });
+
+                          return (
+                            <td key={lan} className="p-3 text-center">
+                              {record ? (
+                                <div className="inline-flex flex-col items-center">
+                                  <span className="text-emerald-600 font-extrabold text-xs bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 flex items-center gap-1">
+                                    <CheckCircle2 size={13} />
+                                    {formatCurrency(record.soTien)}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 mt-0.5 font-mono">{record.date}</span>
+                                </div>
+                              ) : (
+                                <span className="text-red-600 font-medium text-xs bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/60 inline-flex items-center gap-1">
+                                  <AlertCircle size={14} className="text-red-600" />
+                                  Chưa nộp
+                                </span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={4 + currentLans.length} className="p-8 text-center text-slate-400 font-medium">
+                      Không tìm thấy học sinh phù hợp.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+export default PaymentHistorySection;
