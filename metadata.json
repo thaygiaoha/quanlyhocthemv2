@@ -1,0 +1,10 @@
+{
+  "name": "Quản lý lớp học và kiểm tra thông minh",
+  "description": "HỆ THỐNG QUẢN LÝ LỚP HỌC VÀ KIỂM TRA TRÔNG MINH",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
