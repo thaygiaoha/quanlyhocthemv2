@@ -1,16 +1,19 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { AppData } from '../types';
 import { verifyBanquyen } from './verifyadmin'; // 2207them3
-import { motion, AnimatePresence } from "motion/react";
 import { 
   GraduationCap, 
   QrCode, 
-  CheckSquare,   
+  CheckSquare, 
+  FileWord, 
+  FileText, 
   GitBranch, 
   Sparkles, 
   ArrowRight,
   ShieldCheck,
   Zap,
+  X,
   Gamepad2, 
   RefreshCw,
   ExternalLink,
@@ -281,8 +284,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
   ) : (
     <div className="flex items-center gap-1.5 shrink-0">
       <button 
-        onClick={() => setShowQrModal(false)}
-  className="px-6 py-3 bg-yellow-500 text-white text-[15px] rounded-2xl font-bold"
+        onClick={() => setShowQrModal(true)}
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 rounded-xl transition-all shrink-0 font-extrabold text-xs shadow-md shadow-amber-200"
       >
         <span>ĐK Vip</span>
         <ArrowRight size={13} />
