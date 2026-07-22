@@ -40,6 +40,10 @@ export interface AppData {
   licenseStatus?: string; // "vip" hoặc các giá trị khác
   linkScript?: string;
   enableCopyrightCheck?: boolean; // Bật/tắt kiểm tra bản quyền toàn cục
+  // 2207them3: Bổ sung các cột bản quyền mới
+  level?: string;
+  hetHan?: string;
+  checkBanquyen?: string;
 }
 export interface BankData {
   id: string;
