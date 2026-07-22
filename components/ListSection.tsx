@@ -5,6 +5,7 @@ import { AppData } from '../types';
 interface ListSectionProps {
   data: AppData;  
   onUpdate: (data: AppData) => void;
+  onRefreshData?: () => Promise<void>;
 }
 
 const ListSection: React.FC<ListSectionProps> = ({ data }) => {
@@ -95,7 +96,7 @@ const ListSection: React.FC<ListSectionProps> = ({ data }) => {
     }
   };
 
-  // Hàm xử lý xóa một học sinh - Đã nhận thêm mã học sinh studentCode định danh
+  // 2207sua2: Hàm xử lý xóa một học sinh chuẩn hóa, tách biệt logic API và đồng bộ Cloud
   const handleDeleteStudent = async (studentName: string, phoneNumber: string, studentCode: string) => {
     const inputPassword = window.prompt(`NHẬP MẬT KHẨU ADMIN Ô C2 ĐỂ XÓA HỌC SINH: ${studentName.toUpperCase()}`);
     if (inputPassword === null) return;
@@ -110,6 +111,8 @@ const ListSection: React.FC<ListSectionProps> = ({ data }) => {
     // Ưu tiên dùng code để quản lý trạng thái loading của nút bấm cho đồng bộ
     const uniqueKey = studentCode ? studentCode.trim() : ''; // 1807Sua
     setIsDeleting(uniqueKey);
+
+    let isSuccess = false;
 
     try {
       if (data.sheetLink) {
@@ -127,15 +130,40 @@ const ListSection: React.FC<ListSectionProps> = ({ data }) => {
         const result = await response.json();
         alert(result.message);
         if (result.status === 200) {
-          window.location.reload(); // Reload để cập nhật lại danh sách mới và STT mới
+          isSuccess = true;
         }
       } else {
         alert("Không tìm thấy liên kết Google Sheets!");
       }
     } catch (err) {
+      console.error("Lỗi xóa học sinh:", err);
       alert("Lỗi xảy ra trong quá trình xóa học sinh.");
     } finally {
       setIsDeleting(null);
+    }
+
+    // 2207them2: Tách riêng bước làm mới dữ liệu sau khi xóa thành công để tránh báo lỗi giả
+    if (isSuccess) {
+      try {
+        if (onRefreshData) {
+          await onRefreshData();
+        } else if (onUpdate) {
+          const updatedSheets = { ...data.sheets };
+          if (updatedSheets[selectedClass]) {
+            const newStudents = updatedSheets[selectedClass].students
+              .filter(s => (s.code || '').trim() !== (studentCode || '').trim() && s.name !== studentName)
+              .map((s, idx) => ({ ...s, stt: idx + 1 }));
+            updatedSheets[selectedClass] = {
+              ...updatedSheets[selectedClass],
+              students: newStudents,
+              studentCount: newStudents.length
+            };
+            onUpdate({ ...data, sheets: updatedSheets });
+          }
+        }
+      } catch (refreshErr) {
+        console.error("Lỗi cập nhật giao diện sau khi xóa:", refreshErr);
+      }
     }
   };
 
