@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, Key, Database, DollarSign, RefreshCw, Loader2, Lock, ShieldCheck, ToggleLeft, ToggleRight, Phone, EyeOff, Eye, User } from 'lucide-react';
 import { AppData } from '../types';
 import { fetchFromSheet, syncSettingsToSheet } from '../services/storage';
-import { verifyBanquyen, updateLinkScriptOnSheet } from './verifyadmin';
+import { verifyBanquyen, updateLinkScriptOnSheet, verifyAdminPassword, URL_ADMIN } from './verifyadmin';
 
 interface SettingsSectionProps {
   data: AppData;
@@ -123,9 +123,32 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
     }
   };
 
-  const updateFee = (className: string, fee: number) => {
-    const newFees = config.fees.map(f => f.className === className ? { ...f, fee } : f);
-    setConfig({ ...config, fees: newFees });
+  // 2207them3: Hàm bảo mật kiểm tra Mật khẩu Quản trị C2 của URL_ADMIN khi thay đổi Bật/Tắt bản quyền
+  const handleToggleCopyright = async () => {
+    const pwd = prompt("Yêu cầu nhập Mật khẩu Quản trị Hệ thống (C2 Admin) để Bật/Tắt bản quyền:");
+    if (!pwd || !pwd.trim()) return;
+
+    const targetAdminUrl = URL_ADMIN || config.sheetLink;
+    if (!targetAdminUrl) {
+      alert("Chưa cấu hình URL_ADMIN hoặc Google Sheets Link để xác minh mật khẩu Admin!");
+      return;
+    }
+
+    try {
+      const res = await verifyAdminPassword(targetAdminUrl, pwd.trim());
+      if (res.success) {
+        const nextState = config.enableCopyrightCheck === false ? true : false;
+        const updated = { ...config, enableCopyrightCheck: nextState };
+        setConfig(updated);
+        onUpdate(updated);
+        alert(`Đã xác thực Mật khẩu Quản trị Admin thành công!\nTrạng thái bản quyền hiện tại: ${nextState ? 'ĐÃ BẬT (Bắt buộc VIP)' : 'ĐÃ TẮT (Dùng thử miễn phí)'}`);
+      } else {
+        alert("Mật khẩu Quản trị Admin (C2 System) không chính xác! Chỉ Admin hệ thống mới có quyền Bật/Tắt kiểm tra bản quyền.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Lỗi kết nối khi xác thực mật khẩu Quản trị Admin!");
+    }
   };
 
   if (!isAuthorized) {
@@ -242,11 +265,16 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
             <div className="flex items-center justify-between p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
               <div>
                 <h4 className="text-xs font-extrabold text-indigo-900">Bắt buộc kiểm tra Bản quyền</h4>
-                <p className="text-[10px] text-indigo-500 font-medium">Khi bật, giáo viên cần trạng thái VIP để sử dụng đầy đủ các tính năng.</p>
+                <p className="text-[10px] text-indigo-500 font-medium">
+                  {config.enableCopyrightCheck !== false 
+                    ? 'Đang BẬT: Cần trạng thái VIP để dùng trọn vẹn tính năng. (Bấm nút để Tắt - Yêu cầu Mật khẩu C2)' 
+                    : 'Đang TẮT: Dùng thử miễn phí cho tất cả Giáo viên. (Bấm nút để Bật - Yêu cầu Mật khẩu C2)'}
+                </p>
               </div>
               <button 
-                onClick={() => setConfig({ ...config, enableCopyrightCheck: !config.enableCopyrightCheck })}
+                onClick={handleToggleCopyright}
                 className="text-indigo-600 hover:text-indigo-800 transition-colors"
+                title="Yêu cầu Mật khẩu Quản trị C2 để Bật/Tắt"
               >
                 {config.enableCopyrightCheck !== false ? (
                   <ToggleRight size={40} className="text-indigo-600" />
