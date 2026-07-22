@@ -1,5 +1,6 @@
 import React from 'react';
 import { AppData } from '../types';
+import { verifyBanquyen } from './verifyadmin'; // 2207them3
 import { 
   GraduationCap, 
   QrCode, 
@@ -17,7 +18,7 @@ import {
   Facebook, Youtube, Twitter, Send, UserPlus
 } from 'lucide-react';
 
-// 2107sua: Thêm prop onRefreshData và xử lý bản quyền
+// 2107sua / 2207sua3: Thêm prop onRefreshData và xử lý bản quyền
 interface DashboardProps {
   data: AppData;  
   onUpdate: (data: AppData) => void;
@@ -25,11 +26,53 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) => {
+  // 2207sua3: Hàm xác minh bản quyền giáo viên từ sheet banquyen
   const handleVerifyLicense = async () => {
-    if (onRefreshData) {
-      await onRefreshData();
-    } else {
-      alert("Chưa cấu hình liên kết Google Sheets để xác minh bản quyền!");
+    if (data.enableCopyrightCheck === false) {
+      alert("Hệ thống đang tắt kiểm tra bản quyền (Chế độ Dùng thử miễn phí). Tất cả tính năng đều được sử dụng bình thường!");
+      return;
+    }
+
+    if (!data.sheetLink) {
+      alert("Chưa cấu hình liên kết Google Sheets để xác minh bản quyền! Vui lòng vào Cài đặt để cập nhật Web App URL.");
+      return;
+    }
+
+    const inputIdgv = prompt("Nhập Số điện thoại IDGV đã đăng ký bản quyền:", data.idgv || "") || "";
+    if (!inputIdgv.trim()) return;
+
+    const inputPass = prompt("Nhập Mật khẩu bản quyền Giáo viên:") || "";
+    if (!inputPass.trim()) return;
+
+    try {
+      const res = await verifyBanquyen(data.sheetLink, inputIdgv, inputPass);
+      if (res.success && res.licenseStatus === 'vip') {
+        const updatedData: AppData = {
+          ...data,
+          idgv: res.idgv || inputIdgv,
+          fullname: res.fullname || data.fullname,
+          mon: res.mon || data.mon,
+          idmon: res.idmon || data.idmon,
+          licenseStatus: 'vip',
+          level: res.level || 'Vip',
+          hetHan: res.hetHan || data.hetHan,
+          checkBanquyen: res.checkBanquyen || 'vip',
+          linkScript: res.linkScript || data.linkScript
+        };
+        onUpdate(updatedData);
+        alert(`Xác thực bản quyền VIP thành công!\nChào mừng Giáo viên: ${res.fullname || inputIdgv}\nCấp độ: ${res.level || 'VIP'}\nHạn sử dụng: ${res.hetHan || 'Vô thời hạn'}`);
+      } else {
+        const updatedData: AppData = {
+          ...data,
+          idgv: inputIdgv,
+          licenseStatus: 'free'
+        };
+        onUpdate(updatedData);
+        alert(res.message || "Tài khoản chưa được kích hoạt bản quyền VIP hoặc đã hết hạn!");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi kết nối khi xác minh bản quyền!");
     }
   };
   
@@ -56,7 +99,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
   badge: "Hệ thống",
   isLicenseCheck: true // Cờ riêng để gọi hàm xác minh
 },
-     {
+ {
       title: "Hệ thống ra đề thi Online",
       description: "Nền tảng tổ chức thi và kiểm tra trực tuyến thế hệ mới: Nên chọn tạo đề từ PDF và ra đề từ ngân hàng, trích xuất hình ảnh/câu hỏi từ file PDF bằng AI và thiết lập ma trận đề thi từ ngân hàng câu hỏi.",
       features: ["Trích xuất Word / PDF", "Tạo đề theo ma trận", "Ngân hàng câu hỏi phong phú, đa dạng", "Chống gian lận khi làm bài", "Tải điểm, xem điểm linh hoạt"],
@@ -176,9 +219,17 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
   <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${app.color} flex items-center justify-center text-white shadow-md shadow-indigo-100 shrink-0`}>
     <Icon size={20} />
   </div>
-  <h4 className="text-base font-bold text-slate-800 tracking-tight group-hover:text-indigo-600 transition-colors pr-12">
-    {app.title}
-  </h4>
+  <div className="flex items-center gap-2 flex-wrap pr-12">
+    <h4 className="text-base font-bold text-slate-800 tracking-tight group-hover:text-indigo-600 transition-colors">
+      {app.title}
+    </h4>
+    {/* 2207them3: Thông báo Dùng thử miễn phí bên cạnh chữ Kiểm tra bản quyền khi tắt bản quyền (false) */}
+    {app.isLicenseCheck && data.enableCopyrightCheck === false && (
+      <span className="px-2 py-0.5 text-[10px] font-extrabold bg-amber-100 text-amber-700 rounded-md shrink-0 border border-amber-200">
+        Dùng thử miễn phí
+      </span>
+    )}
+  </div>
 </div>
 
 <p className="text-xs text-slate-500 leading-relaxed font-medium mt-2">
@@ -217,18 +268,34 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
     </button>
   ))
 ) : app.isLicenseCheck ? (
-  /* Nút Kiểm tra bản quyền */
-  <button 
-    onClick={() => {
-      const isCheckBanQuyen = true; // Biến điều kiện check bản quyền của thầy
-      if (isCheckBanQuyen) {
-        handleVerifyLicense(); // Gọi hàm xác minh bản quyền của thầy tại đây
-      }
-    }}
-    className="flex items-center gap-1 px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-600 hover:text-white rounded-xl transition-all shrink-0 font-bold"
-  >
-    Xác minh ngay <ArrowRight size={12} />
-  </button>
+  /* 2207sua3: Nếu là vip và còn hạn sử dụng -> Nút 'Cấp độ Vip'. Nếu không phải Vip -> Nút 'ĐK Vip' (chuyển hướng https://smarteduv2.vercel.app?mode=dkvip) */
+  data.licenseStatus === 'vip' ? (
+    <button 
+      onClick={handleVerifyLicense}
+      className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl transition-all shrink-0 font-extrabold text-xs shadow-md shadow-emerald-100"
+      title="Bản quyền VIP - Nhấp để kiểm tra lại"
+    >
+      <ShieldCheck size={14} />
+      <span>Cấp độ Vip</span>
+    </button>
+  ) : (
+    <div className="flex items-center gap-1.5 shrink-0">
+      <button 
+        onClick={() => window.open("https://smarteduv2.vercel.app?mode=dkvip", "_blank")}
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 rounded-xl transition-all shrink-0 font-extrabold text-xs shadow-md shadow-amber-200"
+      >
+        <span>ĐK Vip</span>
+        <ArrowRight size={13} />
+      </button>
+      <button 
+        onClick={handleVerifyLicense}
+        className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all text-xs font-bold"
+        title="Nhấp để xác minh bản quyền đã đăng ký"
+      >
+        Xác minh
+      </button>
+    </div>
+  )
 ) : app.isExternal ? (
   /* Nút Mở ứng dụng thông thường */
   <button 
