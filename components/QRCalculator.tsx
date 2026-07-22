@@ -74,7 +74,93 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
   const [bulkPassword, setBulkPassword] = useState('');
   const [isCheckingBulk, setIsCheckingBulk] = useState(false);
 
-  // Xác minh admin chỉnh sửa ngân hàng
+  // thempass: Quản lý danh sách mật khẩu đã lưu
+  const [savedPasswords, setSavedPasswords] = useState<string[]>(() => {
+    const initial: string[] = [];
+    if (data.passwordC2 && String(data.passwordC2).trim()) {
+      initial.push(String(data.passwordC2).trim());
+    }
+    if (!initial.includes('16868688')) {
+      initial.push('16868688');
+    }
+    try {
+      const stored = localStorage.getItem('saved_qr_passwords');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((p: string) => {
+            if (p && typeof p === 'string' && p.trim() && !initial.includes(p.trim())) {
+              initial.push(p.trim());
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Lỗi đọc mật khẩu đã lưu:", e);
+    }
+    return initial;
+  });
+
+  // suapass: Cập nhật danh sách khi data.passwordC2 thay đổi
+  useEffect(() => {
+    if (data.passwordC2 && String(data.passwordC2).trim()) {
+      const pwd = String(data.passwordC2).trim();
+      setSavedPasswords(prev => prev.includes(pwd) ? prev : [pwd, ...prev]);
+    }
+  }, [data.passwordC2]);
+
+  // thempass: Hàm lưu mật khẩu hợp lệ vào danh sách đã lưu
+  const savePasswordToStorage = (pwd: string) => {
+    if (!pwd || !pwd.trim()) return;
+    const clean = pwd.trim();
+    if (!savedPasswords.includes(clean)) {
+      const updated = [...savedPasswords, clean];
+      setSavedPasswords(updated);
+      try {
+        localStorage.setItem('saved_qr_passwords', JSON.stringify(updated));
+      } catch (e) {
+        console.error("Lỗi ghi mật khẩu đã lưu:", e);
+      }
+    }
+  };
+
+  // thempass: Giao diện chọn nhanh mật khẩu đã lưu
+  const renderPasswordSelector = (
+    currentVal: string,
+    onSelect: (val: string) => void
+  ) => {
+    if (savedPasswords.length === 0) return null;
+
+    return (
+      <div className="space-y-1.5 my-2">
+        <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold">
+          <span>Chọn mật khẩu đã lưu:</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {savedPasswords.map((pwd, idx) => {
+            const isSelected = currentVal === pwd;
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => onSelect(pwd)}
+                className={`px-2 py-1 rounded-lg text-[11px] font-mono font-bold transition-all border flex items-center gap-1 ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
+                }`}
+              >
+                <span>🔑</span>
+                <span>{pwd}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // suapass: Xác minh admin chỉnh sửa ngân hàng & tự động lưu mật khẩu
   const handleAuth = async () => {
     if (!password.trim()) {
       alert('Vui lòng nhập mật khẩu Admin Ô C2!');
@@ -86,6 +172,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
         const result = await verifyAdminPassword(data.sheetLink, password);
         if (result.success) {
           setIsAuthorized(true);
+          savePasswordToStorage(password); // thempass: Lưu mật khẩu thành công
           alert(result.message);
         } else {
           alert(result.message || 'Mật khẩu Admin không chính xác hoặc lỗi kết nối!');
@@ -99,34 +186,32 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
       setIsChecking(false);
     }
   };
-  // Xác minh quyền vào xem
+
+  // suapass: Xác minh quyền vào xem
   const handleAuthV = async () => {
-  if (!password.trim()) {
-    alert('Vui lòng nhập mật khẩu!');
-    return;
-  }  
-  setIsChecking(true);
-  try {
-    const key = String(password).toLowerCase().trim();
-    if (key === "16868688") {       
-      setIsAuthorizedV(true);
-      alert('Xác thực thành công!');       
-      // Thêm logic chuyển hướng hoặc set login state của bạn ở đây (nếu có)
-    } else {
-      alert('Sai mật khẩu rồi nhé bạn! (^__^)');
-    }   
-  } catch (error) {
-    console.error("Lỗi xác thực:", error);
-    alert('Đã xảy ra lỗi trong quá trình xác thực.');
-  } finally {
-    // block finally này luôn chạy, giúp đảm bảo tắt trạng thái loading bất kể đúng/sai/lỗi
-    setIsChecking(false); 
-  }
-};
+    if (!password.trim()) {
+      alert('Vui lòng nhập mật khẩu!');
+      return;
+    }  
+    setIsChecking(true);
+    try {
+      const key = String(password).toLowerCase().trim();
+      if (key === "16868688") {       
+        setIsAuthorizedV(true);
+        savePasswordToStorage(password); // thempass: Lưu mật khẩu
+        alert('Xác thực thành công!');       
+      } else {
+        alert('Sai mật khẩu rồi nhé bạn! (^__^)');
+      }   
+    } catch (error) {
+      console.error("Lỗi xác thực:", error);
+      alert('Đã xảy ra lỗi trong quá trình xác thực.');
+    } finally {
+      setIsChecking(false); 
+    }
+  };
 
-
-
-  // Xác thực tạo QR cá nhân
+  // suapass: Xác thực tạo QR cá nhân & tự động lưu mật khẩu
   const handleAuthIndividual = async () => {
     if (!individualPassword.trim()) {
       alert('Vui lòng nhập mật khẩu Admin!');
@@ -138,6 +223,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
         const result = await verifyAdminPassword(data.sheetLink, individualPassword);
         if (result.success) {
           setIsIndividualVerified(true);
+          savePasswordToStorage(individualPassword); // thempass: Lưu mật khẩu thành công
           alert(result.message);
         } else {
           alert(result.message || 'Mật khẩu Admin không chính xác hoặc lỗi kết nối!');
@@ -152,7 +238,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     }
   };
 
-  // Xác thực tạo QR hàng loạt
+  // suapass: Xác thực tạo QR hàng loạt & tự động lưu mật khẩu
   const handleAuthBulk = async () => {
     if (!bulkPassword.trim()) {
       alert('Vui lòng nhập mật khẩu Admin!');
@@ -164,6 +250,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
         const result = await verifyAdminPassword(data.sheetLink, bulkPassword);
         if (result.success) {
           setIsBulkVerified(true);
+          savePasswordToStorage(bulkPassword); // thempass: Lưu mật khẩu thành công
           alert(result.message);
         } else {
           alert(result.message || 'Mật khẩu Admin không chính xác hoặc lỗi kết nối!');
@@ -185,14 +272,29 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     return student.attendance ? student.attendance.filter(v => v === 1).length : 0;
   }
 
-  // CODE MỚI: Lấy trực tiếp số tiền đã tính từ Google Sheets về
+  // 2207sua: Lấy số tiền học phí chuẩn xác, 0 buổi = 0 VNĐ nếu không có totalAmount từ trước
   const getStudentAmount = (student: Student) => {
-    return Number(student.totalAmount) || 0;
+    if (Number(student.totalAmount) > 0) {
+      return Number(student.totalAmount);
+    }
+    const attendedCount = getStudentAttendedCount(student);
+    if (attendedCount > 0 && classFee > 0) {
+      return attendedCount * classFee;
+    }
+    return 0;
+  };
+
+  // 2207them: Hàm tạo khóa duy nhất cho học sinh để xử lý chọn hàng loạt chính xác ngay cả khi chưa có mã HS
+  const getStudentKey = (student: Student, index?: number): string => {
+    if (student.code && student.code.trim()) {
+      return student.code.trim();
+    }
+    return `STT_${student.stt || index || 0}_${(student.name || '').replace(/\s+/g, '_')}`;
   };
   // --- THÔNG TIN TÀI KHOẢN NGÂN HÀNG (Sử dụng dữ liệu cấu hình hoặc mặc định) ---
   const [bankId, setBankId] = useState(data.bankId || 'Vietinbank');
   const [bankAccountNo, setBankAccountNo] = useState(data.bankAccountNo || '104887594225');
-  const [bankAccountName, setBankAccountName] = useState(data.bankAccountName || 'HKD HA THAO');
+  const [bankAccountName, setBankAccountName] = useState(data.bankAccountName || 'HO KINH DOANH HA THAO');
   const [isEditingBank, setIsEditingBank] = useState(false);
 
   // Đồng bộ cấu hình tài khoản khi dữ liệu cha thay đổi
@@ -252,10 +354,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
   // Tự động cập nhật số tiền nộp mặc định cho học sinh được chọn
   useEffect(() => {
     if (selectedStudent) {
-      const attendedAmount = getStudentAmount(selectedStudent);
-      const initialAmount = attendedAmount > 0
-        ? attendedAmount
-        : (selectedStudent.totalAmount > 0 ? selectedStudent.totalAmount : classFee);
+      const initialAmount = getStudentAmount(selectedStudent);
       setCustomAmount(initialAmount);
     } else {
       setCustomAmount(0);
@@ -286,38 +385,40 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
   };
 
   // --- XỬ LÝ CHỌN CHECKBOX HÀNG LOẠT ---
-  const handleToggleSelectStudent = (studentCode: string) => {
+  // 2207sua: Cập nhật chọn/bỏ chọn học sinh dùng getStudentKey
+  const handleToggleSelectStudent = (studentKey: string) => {
     const newSelected = new Set(selectedStudentsForBulk);
-    if (newSelected.has(studentCode)) {
-      newSelected.delete(studentCode);
+    if (newSelected.has(studentKey)) {
+      newSelected.delete(studentKey);
     } else {
-      newSelected.add(studentCode);
+      newSelected.add(studentKey);
     }
     setSelectedStudentsForBulk(newSelected);
   };
 
+  // 2207sua: Chọn tất cả học sinh trong lớp đang lọc
   const handleSelectAllFiltered = () => {
-    const allChecked = filteredStudents.every(s => s.code && selectedStudentsForBulk.has(s.code));
+    const allChecked = filteredStudents.length > 0 && filteredStudents.every((s, idx) => selectedStudentsForBulk.has(getStudentKey(s, idx)));
     const newSelected = new Set(selectedStudentsForBulk);
 
-    filteredStudents.forEach(s => {
-      if (s.code) {
-        if (allChecked) {
-          newSelected.delete(s.code);
-        } else {
-          newSelected.add(s.code);
-        }
+    filteredStudents.forEach((s, idx) => {
+      const key = getStudentKey(s, idx);
+      if (allChecked) {
+        newSelected.delete(key);
+      } else {
+        newSelected.add(key);
       }
     });
     setSelectedStudentsForBulk(newSelected);
   };
 
   // --- TẠO URL VIETQR ĐỘNG ---
+  // 2207sua: Chuẩn hóa tạo URL VietQR và nội dung chuyển khoản cho tất cả mã HS
   const generateQrUrl = (student: Student, amount: number) => {
-    const code = student.code || "";
+    const code = student.code || student.name || "";
     
-    // Nếu là mã Học Thêm (HT) thì lấy selectedLanNop, nếu là Chủ Nhiệm (CN) thì bỏ trống ""
-    const lanNopHienTai = code.toUpperCase().startsWith("HT") ? selectedLanNop : "";
+    // Nếu mã không phải Chủ Nhiệm (CN) thì lấy selectedLanNop (L1, L2...)
+    const lanNopHienTai = !code.toUpperCase().startsWith("CN") ? selectedLanNop : "";
 
     // Ghép chuỗi nội dung (dùng .trim() để xóa khoảng trắng thừa nếu lanNopHienTai bị rỗng)
     const content = `SEVQR ${code} ${lanNopHienTai} nop hoc phi`.replace(/\s+/g, ' ').trim();
@@ -355,7 +456,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
       .replace(/[^a-zA-Z0-9\s]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    return `${rawCode}. ${safeNameNoAccents}.pdf`;
+    return `${rawCode}.${selectedLanNop}.${safeNameNoAccents}.pdf`;
   };
 
   // Hàm sinh mã PDF dạng Blob cho học sinh
@@ -410,7 +511,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100, 116, 139); // slate-500
-    doc.text(`Lop hoc them Thay Ha - Phone: 0988.948.882`, 15, 27);
+    doc.text(`Dang ky lop hoc them Thay Ha - Phone: 0988.948.882`, 15, 27);
     doc.text(`Address: Xuan Phu - Tan Tien - Bac Ninh`, 15, 32);
 
     // Đường gạch ngang phân cách
@@ -449,7 +550,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     doc.text(student.code || "---", 65, 78);
 
     doc.setFont('helvetica', 'normal');
-    doc.text(`Lop hoc them:`, 22, 85);
+    doc.text(`Lop:`, 22, 85);
     doc.setFont('helvetica', 'bold');
     doc.text(student.class || selectedClass.replace("Lop", "Lop "), 65, 85);
 
@@ -513,7 +614,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(51, 65, 85); // slate-700
-    const infoContent = `${student.code || ""} ${selectedLanNop || ""} nop hoc phi`
+    const infoContent = `SEVQR ${student.code || ""} ${selectedLanNop || ""} `
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/đ/g, 'd')
@@ -596,7 +697,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     }
   };
 
-  // Hàm tải toàn bộ QR hàng loạt (ZIP)
+  // 2207sua: Sửa hàm tải toàn bộ QR hàng loạt (ZIP) hỗ trợ đầy đủ key học sinh
   const handleDownloadBulk = async () => {
     if (selectedStudentsForBulk.size === 0) {
       alert("Vui lòng chọn ít nhất 1 học sinh trước khi tải hàng loạt!");
@@ -609,7 +710,13 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
       const zip = new JSZip();
       let count = 0;
       
-      const studentsToDownload = currentStudents.filter(s => s.code && selectedStudentsForBulk.has(s.code));
+      const studentsToDownload = currentStudents.filter((s, idx) => selectedStudentsForBulk.has(getStudentKey(s, idx)));
+
+      if (studentsToDownload.length === 0) { // 2207them
+        alert("Không tìm thấy học sinh nào được chọn trong lớp này!");
+        setDownloadingBulk(false);
+        return;
+      }
 
       for (const student of studentsToDownload) {
         // Tính số tiền theo lựa chọn của người dùng
@@ -665,7 +772,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     }
   };
 
-  // Hàm tải toàn bộ PDF hàng loạt dạng ZIP
+  // 2207sua: Sửa hàm tải toàn bộ PDF hàng loạt dạng ZIP
   const handleDownloadBulkPdf = async () => {
     if (selectedStudentsForBulk.size === 0) {
       alert("Vui lòng chọn ít nhất 1 học sinh trước khi tải hàng loạt PDF!");
@@ -678,7 +785,13 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
       const zip = new JSZip();
       let count = 0;
 
-      const studentsToDownload = currentStudents.filter(s => s.code && selectedStudentsForBulk.has(s.code));
+      const studentsToDownload = currentStudents.filter((s, idx) => selectedStudentsForBulk.has(getStudentKey(s, idx)));
+
+      if (studentsToDownload.length === 0) { // 2207them
+        alert("Không tìm thấy học sinh nào được chọn trong lớp này!");
+        setDownloadingBulkPdf(false);
+        return;
+      }
 
       for (const student of studentsToDownload) {
         // Tính số tiền theo lựa chọn của người dùng
@@ -808,12 +921,12 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
 
           {/* Công cụ chọn hàng loạt */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
-            {/* Nút Chọn tất cả */}
+            {/* 2207sua: Nút chọn tất cả lớp sử dụng getStudentKey */}
             <button
               onClick={handleSelectAllFiltered}
               className="flex items-center gap-1.5 font-bold text-slate-600 hover:text-indigo-600 transition-colors shrink-0"
             >
-              {filteredStudents.length > 0 && filteredStudents.every(s => s.code && selectedStudentsForBulk.has(s.code)) ? (
+              {filteredStudents.length > 0 && filteredStudents.every((s, idx) => selectedStudentsForBulk.has(getStudentKey(s, idx))) ? (
                 <CheckSquare size={16} className="text-indigo-600" />
               ) : (
                 <Square size={16} />
@@ -872,34 +985,31 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
               </thead>
               <tbody className="divide-y divide-slate-50 text-xs text-slate-700">
                 {filteredStudents.length > 0 ? (
-                  filteredStudents.map((student) => {
+                  filteredStudents.map((student, index) => { // 2207sua
                     const studentCode = student.code || '';
+                    const studentKey = getStudentKey(student, index); // 2207them
                     const attendedCount = getStudentAttendedCount(student);
                     const amount = getStudentAmount(student);
-                    const isChecked = selectedStudentsForBulk.has(studentCode);
-                    const isSelectedSingle = selectedStudent && selectedStudent.code === student.code;
+                    const isChecked = selectedStudentsForBulk.has(studentKey); // 2207sua
+                    const isSelectedSingle = selectedStudent && (selectedStudent.code ? selectedStudent.code === student.code : selectedStudent.stt === student.stt); // 2207sua
 
                     return (
                       <tr
-                        key={studentCode || student.name + student.stt}
+                        key={studentKey} // 2207sua
                         className={`hover:bg-slate-50/50 transition-colors ${isSelectedSingle ? 'bg-indigo-50/40 font-bold' : ''
                           }`}
                       >
                         <td className="p-3 text-center">
-                          {studentCode ? (
-                            <button
-                              onClick={() => handleToggleSelectStudent(studentCode)}
-                              className="text-slate-400 hover:text-indigo-600 transition-colors"
-                            >
-                              {isChecked ? (
-                                <CheckSquare size={16} className="text-indigo-600" />
-                              ) : (
-                                <Square size={16} />
-                              )}
-                            </button>
-                          ) : (
-                            <span className="text-[10px] text-slate-300">-</span>
-                          )}
+                          <button // 2207sua
+                            onClick={() => handleToggleSelectStudent(studentKey)}
+                            className="text-slate-400 hover:text-indigo-600 transition-colors"
+                          >
+                            {isChecked ? (
+                              <CheckSquare size={16} className="text-indigo-600" />
+                            ) : (
+                              <Square size={16} />
+                            )}
+                          </button>
                         </td>
                         <td className="p-3 text-center font-mono font-bold text-slate-400">
                           {String(student.stt).padStart(2, '0')}
@@ -977,17 +1087,18 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
 
             {isEditingBank ? (
               !isAuthorized ? (
-                /* Sửa lần 2: Chỉ yêu cầu mật khẩu khi bấm vào chức năng sửa đổi */
+                /* suapass: Yêu cầu mật khẩu với bộ chọn mật khẩu đã lưu */
                 <div className="space-y-3 animate-in fade-in duration-200">
                   <div className="p-3 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-100 text-xs font-bold flex items-center gap-1.5">
                     <Lock size={14} />
                     <span>Nhập mật khẩu Admin Ô C2 để chỉnh sửa cấu hình ngân hàng</span>
                   </div>
+                  {renderPasswordSelector(password, setPassword)}
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Nhập mật khẩu Admin..."
+                    placeholder="Nhập hoặc chọn mật khẩu Admin..."
                     className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                   <button
@@ -1044,20 +1155,20 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                 </div>
               )
             ) : (
-              <div className="grid grid-cols-3 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
-                <div>
-                  <span className="block text-[9px] text-red-700 font-bold uppercase">Ngân hàng</span>
-                  <span className="font-extrabold text-slate-700">{bankId}</span>
-                </div>
-                <div>
-                  <span className="block text-[9px] text-red-700 font-bold uppercase">Số tài khoản</span>
-                  <span className="font-extrabold text-slate-700 font-mono">{bankAccountNo}</span>
-                </div>
-                <div className="col-span-1">
-                  <span className="block text-[9px] text-red-700 font-bold uppercase">Chủ tài khoản</span>
-                  <span className="font-extrabold text-slate-700 truncate block uppercase">{bankAccountName}</span>
-                </div>
-              </div>
+             <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
+  <div>
+    <span className="block text-[9px] text-red-700 font-bold uppercase">Ngân hàng</span>
+    <span className="font-extrabold text-slate-700">{bankId}</span>
+  </div>
+  <div>
+    <span className="block text-[9px] text-red-700 font-bold uppercase">Số tài khoản</span>
+    <span className="font-extrabold text-slate-700 font-mono">{bankAccountNo}</span>
+  </div>
+  <div className="col-span-2">
+    <span className="block text-[9px] text-red-700 font-bold uppercase">Chủ tài khoản</span>
+    <span className="font-extrabold text-slate-700 truncate block uppercase">{bankAccountName}</span>
+  </div>
+</div>
             )}
           </div>
 
@@ -1109,13 +1220,14 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                     </span>
                   </div>
 
-                  {/* PHẦN HIỂN THỊ QR CHỈ XUẤT HIỆN KHI ĐÃ XÁC THỰC CÁ NHÂN */}
+                  {/* suapass: PHẦN HIỂN THỊ QR CHỈ XUẤT HIỆN KHI ĐÃ XÁC THỰC CÁ NHÂN */}
                   {!isIndividualVerified ? (
                     <div className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3 text-left animate-in fade-in duration-200">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                         <Lock size={14} className="text-indigo-600 animate-bounce" />
                         <span>Xác thực Admin để tạo mã QR</span>
                       </div>
+                      {renderPasswordSelector(individualPassword, setIndividualPassword)}
                       <input
                         type="password"
                         value={individualPassword}
@@ -1123,7 +1235,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleAuthIndividual();
                         }}
-                        placeholder="Nhập mật khẩu Admin Ô C2..."
+                        placeholder="Nhập hoặc chọn mật khẩu Admin..."
                         className="w-full p-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                       <button
@@ -1279,13 +1391,14 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                 </button>
               </div>
 
-              {/* LỰA CHỌN PHƯƠNG THỨC TÍNH SỐ TIỀN TRONG IN HÀNG LOẠT VÀ HIỂN THỊ */}
+              {/* suapass: LỰA CHỌN PHƯƠNG THỨC TÍNH SỐ TIỀN TRONG IN HÀNG LOẠT VÀ HIỂN THỊ */}
               {!isBulkVerified ? (
                 <div className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3 text-left animate-in fade-in duration-200">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                     <Lock size={14} className="text-indigo-600 animate-bounce" />
                     <span>Xác thực Admin để tạo QR hàng loạt</span>
                   </div>
+                  {renderPasswordSelector(bulkPassword, setBulkPassword)}
                   <input
                     type="password"
                     value={bulkPassword}
@@ -1293,7 +1406,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleAuthBulk();
                     }}
-                    placeholder="Nhập mật khẩu Admin Ô C2..."
+                    placeholder="Nhập hoặc chọn mật khẩu Admin..."
                     className="w-full p-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                   <button
@@ -1427,9 +1540,10 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                       }
                     `}</style>
 
+                    {/* 2207sua: Sửa hiển thị danh sách QR hàng loạt và khắc phục lỗi biến lanNopHienTai */}
                     {currentStudents
-                      .filter(s => s.code && selectedStudentsForBulk.has(s.code))
-                      .map((student) => {
+                      .filter((s, idx) => selectedStudentsForBulk.has(getStudentKey(s, idx)))
+                      .map((student, idx) => {
                         const attendedCount = getStudentAttendedCount(student);
 
                         // Tính số tiền theo lựa chọn của người dùng
@@ -1444,15 +1558,19 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
 
                         if (amount === 0) return null; // Không hiển thị phiếu nếu học phí bằng 0
 
+                        const code = student.code || student.name || ""; // 2207them
+                        const lanNopHienTai = !code.toUpperCase().startsWith("CN") ? selectedLanNop : ""; // 2207them
+                        const transferContent = `SEVQR ${code} ${lanNopHienTai} nop hoc phi`.replace(/\s+/g, ' ').trim(); // 2207them
+
                         return (
                           <div
-                            key={student.code}
+                            key={getStudentKey(student, idx)} // 2207sua
                             className="print-card bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center text-center space-y-3"
                           >
                             <div className="w-full text-left border-b border-slate-200/60 pb-2 flex justify-between items-start">
                               <div>
                                 <span className="font-extrabold text-slate-800 text-xs block">{student.stt}. {student.name}</span>
-                                <span className="text-[10px] text-slate-500 font-bold block mt-0.5">Lớp: {student.class} | Mã: {student.code}</span>
+                                <span className="text-[10px] text-slate-500 font-bold block mt-0.5">Lớp: {student.class} | Mã: {student.code || "---"}</span>
                               </div>
                               <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded">
                                 {formatCurrency(amount)}
@@ -1468,8 +1586,8 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
 
                             <div className="w-full text-[9px] text-left text-slate-500 space-y-1 bg-white p-3 rounded border border-slate-100">
                               <div>Số buổi: <b className="text-slate-700">{attendedCount} buổi</b></div>
-                              <div className="truncate">Nội dung CK: <b className="text-slate-700 font-mono">SEVQR {student.code || ""} {student.class || ""} ${lanNopHienTai} nop hoc phi</b></div>
-                              <div className="truncate">Chủ TK: <b className="text-slate-700 font-mono">{bankAccountName} </b></div>
+                              <div className="truncate">Nội dung CK: <b className="text-slate-700 font-mono">{transferContent}</b></div> {/* 2207sua */}
+                              <div className="truncate">Chủ TK: <b className="text-slate-700 font-mono">{bankAccountName}</b></div>
                             </div>
                           </div>
                         );
