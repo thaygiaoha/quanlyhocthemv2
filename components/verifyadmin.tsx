@@ -1,6 +1,6 @@
 export const URL_ADMIN = import.meta.env?.VITE_API_URL_ADMIN; 
 
-// 2107them: Xác thực tài khoản giáo viên qua sheet banquyen
+// 2107them / 2207sua3: Xác thực tài khoản giáo viên qua sheet banquyen
 export const verifyBanquyen = async (
   sheetLink: string, 
   idgv: string,
@@ -14,6 +14,9 @@ export const verifyBanquyen = async (
   idmon?: string; 
   licenseStatus?: string; 
   linkScript?: string; 
+  level?: string; // 2207them3
+  hetHan?: string; // 2207them3
+  checkBanquyen?: string; // 2207them3
 }> => {
   if (!idgv.trim()) return { success: false, message: "Số điện thoại IDGV không được để trống!" };
   if (!password.trim()) return { success: false, message: "Mật khẩu không được để trống!" };
@@ -45,7 +48,10 @@ export const verifyBanquyen = async (
       mon: result?.mon,
       idmon: result?.idmon,
       licenseStatus: result?.licenseStatus,
-      linkScript: result?.linkScript
+      linkScript: result?.linkScript,
+      level: result?.level, // 2207them3
+      hetHan: result?.hetHan, // 2207them3
+      checkBanquyen: result?.checkBanquyen // 2207them3
     };
 
   } catch (err) {
