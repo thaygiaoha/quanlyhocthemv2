@@ -56,6 +56,17 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
   badge: "Hệ thống",
   isLicenseCheck: true // Cờ riêng để gọi hàm xác minh
 },
+     {
+      title: "Hệ thống ra đề thi Online",
+      description: "Nền tảng tổ chức thi và kiểm tra trực tuyến thế hệ mới: Nên chọn tạo đề từ PDF và ra đề từ ngân hàng, trích xuất hình ảnh/câu hỏi từ file PDF bằng AI và thiết lập ma trận đề thi từ ngân hàng câu hỏi.",
+      features: ["Trích xuất Word / PDF", "Tạo đề theo ma trận", "Ngân hàng câu hỏi phong phú, đa dạng", "Chống gian lận khi làm bài", "Tải điểm, xem điểm linh hoạt"],
+      icon: GraduationCap,
+      color: "from-emerald-500 to-teal-600",
+      shadow: "shadow-emerald-100",
+      badge: "Hệ sinh thái",
+      isExternal: true,
+      link: "https://smarteduv2.vercel.app?mode=login"
+    },
     {
       title: "Hệ thống tạo trò chơi trí tuệ Online",
       description: "Nền tảng tạo Game online với ngân hàng câu hỏi hệ thống đa dạng, phong phú. Các game điển hình: Chinh phục vũ trụ, Đua xe công thức F1, Vua phá băng,... và nhiều game hấp dẫn khác.",
