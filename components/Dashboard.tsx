@@ -135,48 +135,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
         </div>
       </div>
 
-      {/* 2107them: Khối hiển thị trực quan trạng thái bản quyền Giáo viên */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-white shadow-lg shrink-0 ${data.licenseStatus === 'vip' ? 'bg-gradient-to-tr from-emerald-500 to-teal-600 shadow-emerald-100' : 'bg-gradient-to-tr from-amber-500 to-orange-600 shadow-amber-100'}`}>
-            <ShieldCheck size={24} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="text-base font-extrabold text-slate-800">Trạng thái bản quyền Giáo viên</h4>
-              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${data.licenseStatus === 'vip' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700 animate-pulse'}`}>
-                {data.licenseStatus === 'vip' ? 'VIP - ĐÃ KÍCH HOẠT' : 'FREE - CHƯA KÍCH HOẠT'}
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 font-medium mt-1">
-              {data.licenseStatus === 'vip' 
-                ? `Kính chào giáo viên: ${data.fullname || data.idgv || 'Quý Thầy/Cô'} ${data.mon ? `(Bộ môn: ${data.mon})` : ''}. Hệ thống đã mở khóa toàn bộ tính năng!`
-                : "Hệ thống đang chạy chế độ Xem thử (view-only). Đăng ký bản quyền và hoàn tất nộp phí (500,000đ) để sử dụng trọn đời."
-              }
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex gap-2 w-full md:w-auto shrink-0 flex-wrap sm:flex-nowrap">
-          <button 
-            onClick={handleVerifyLicense}
-            className="flex-1 md:flex-none px-4 py-2.5 rounded-xl font-bold text-xs bg-slate-50 hover:bg-slate-100 text-slate-600 transition-all border border-slate-200 flex items-center justify-center gap-2 shadow-sm"
-          >
-            <RefreshCw size={14} /> Kiểm tra bản quyền
-          </button>
-          
-          {data.licenseStatus !== 'vip' && (
-            <a 
-              href="https://smarteduv2.vercel.app?mode=register" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex-1 md:flex-none px-4 py-2.5 rounded-xl font-black text-xs text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 transition-all text-center flex items-center justify-center gap-1.5 shadow-lg shadow-amber-100"
-            >
-              Đăng ký VIP <ArrowRight size={13} />
-            </a>
-          )}
-        </div>
-      </div>
+
 
       {/* Grid danh sách các ứng dụng */}
       <div>
