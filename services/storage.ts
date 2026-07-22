@@ -2,7 +2,7 @@
 import { AppData, Student, FeeConfig } from '../types';
 
 const STORAGE_KEY = 'quan_ly_hoc_them_data';
-const MY_SHEET_LINK = 'https://script.google.com/macros/s/AKfycbxU1gFzMDIzYbWxAh70658gBw6czUAhyhud7VqbZWMD1OYlZfqDR5M7W7wfxz831e3gXA/exec';
+const MY_SHEET_LINK = 'https://script.google.com/macros/s/AKfycbwlglx696Wr0BCj8SMAvwh1hlfFg66uemInbxI2W0TdE96wY67eZx_AAxxD5RJnl04NXg/exec';
 
 const DEFAULT_DATA: AppData = {
   sheets: {},
