@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ViewMode, AppData } from './types';
 import { getAppData, saveAppData } from './services/storage';
@@ -115,12 +116,13 @@ const App: React.FC = () => {
             //onRefreshData={() => refreshDataFromCloud(data.sheetLink, true)} // <-- TRUYỀN XUỐNG ĐÂY
           />
         );
-      case ViewMode.LIST:
+       case ViewMode.LIST:
         return <ListSection 
                  data={data}                  
                  onUpdate={handleUpdateData}
                  onRefreshData={() => refreshDataFromCloud(data.sheetLink, false)} // 2207themdelete
-                 />;
+                 />
+        );
       case ViewMode.ATTENDANCE:
   return (
     <AttendanceSection 
@@ -206,36 +208,7 @@ const App: React.FC = () => {
         </header>
 
         <div className="max-w-7xl mx-auto">
-          {/* 2107them: Thanh thông báo trạng thái bản quyền nếu là View-Only (Thường) */}
-          {data.enableCopyrightCheck !== false && data.licenseStatus !== 'vip' && (
-            <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm animate-in fade-in duration-300">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-200">
-                  <RefreshCw size={20} className="animate-spin duration-3000" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-black text-slate-800">Chế độ xem thử (Bản FREE - Chưa kích hoạt VIP)</h4>
-                  <p className="text-[11px] text-slate-500 font-medium">Hệ thống đang chạy chế độ view-only. Thầy/Cô vui lòng đăng ký VIP hoặc liên kết tài khoản để sử dụng đầy đủ các tính năng nạp/lưu dữ liệu.</p>
-                </div>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <a 
-                  href="https://smarteduv2.vercel.app?mode=register" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-amber-200 flex items-center gap-1"
-                >
-                  Đăng ký bản quyền
-                </a>
-                <button 
-                  onClick={() => setView(ViewMode.SETTINGS)}
-                  className="px-3.5 py-2 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all"
-                >
-                  Kích hoạt VIP
-                </button>
-              </div>
-            </div>
-          )}
+
 
           {renderContent()}
         </div>
@@ -243,5 +216,7 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+export default App;
 
 export default App;
