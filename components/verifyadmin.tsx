@@ -1,4 +1,4 @@
-export const URL_ADMIN = import.meta.env?.VITE_API_URL_ADMIN; 
+export const URL_ADMIN = import.meta.env?.VITE_API_URL_ADMIN || "https://script.google.com/macros/s/AKfycbxU1gFzMDIzYbWxAh70658gBw6czUAhyhud7VqbZWMD1OYlZfqDR5M7W7wfxz831e3gXA/exec"; 
 
 // 2107them / 2207sua3: Xác thực tài khoản giáo viên qua sheet banquyen
 export const verifyBanquyen = async (
