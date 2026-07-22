@@ -79,9 +79,10 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
             // 1. Đồng bộ cấu hình học phí & mật khẩu C2 lên Google Sheets
             await syncSettingsToSheet(config.sheetLink, config.passwordC2, config.fees);
             
-            // 2. Đồng bộ Link Script (cột G) của Giáo viên lên sheet banquyen
-            if (config.linkScript !== undefined) {
-              await updateLinkScriptOnSheet(config.sheetLink, idgv, password, config.linkScript);
+            // 2207sua3: Ghi Link Script (cột G) của Giáo viên vào sheet banquyen khi GV đồng bộ
+            const linkToSave = (config.linkScript && config.linkScript.trim()) ? config.linkScript.trim() : config.sheetLink;
+            if (linkToSave) {
+              await updateLinkScriptOnSheet(config.sheetLink, idgv, password, linkToSave);
             }
             
             alert('Đồng bộ thành công cấu hình hệ thống & Link Script lên Google Sheets!');
