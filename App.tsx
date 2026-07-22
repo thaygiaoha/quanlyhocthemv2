@@ -116,7 +116,11 @@ const App: React.FC = () => {
           />
         );
       case ViewMode.LIST:
-        return <ListSection data={data} />;
+        return <ListSection 
+                 data={data}                  
+                 onUpdate={handleUpdateData}
+                 onRefreshData={() => refreshDataFromCloud(data.sheetLink, false)} // 2207themdelete
+                 />;
       case ViewMode.ATTENDANCE:
   return (
     <AttendanceSection 
