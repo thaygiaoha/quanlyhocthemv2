@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AppData } from '../types';
 import { verifyBanquyen } from './verifyadmin'; // 2207them3
+import { motion, AnimatePresence } from "motion/react";
 import { 
   GraduationCap, 
   QrCode, 
