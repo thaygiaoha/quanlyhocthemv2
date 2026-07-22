@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ViewMode, AppData } from './types';
 import { getAppData, saveAppData } from './services/storage';
@@ -116,12 +115,13 @@ const App: React.FC = () => {
             //onRefreshData={() => refreshDataFromCloud(data.sheetLink, true)} // <-- TRUYỀN XUỐNG ĐÂY
           />
         );
-       case ViewMode.LIST:
-        return <ListSection 
-                 data={data}                  
-                 onUpdate={handleUpdateData}
-                 onRefreshData={() => refreshDataFromCloud(data.sheetLink, false)} // 2207themdelete
-                 />
+      case ViewMode.LIST:
+        return (
+          <ListSection 
+            data={data} 
+            onUpdate={handleUpdateData}
+            onRefreshData={() => refreshDataFromCloud(data.sheetLink, false)} // 2207themdelete
+          />
         );
       case ViewMode.ATTENDANCE:
   return (
@@ -216,7 +216,5 @@ const App: React.FC = () => {
     </div>
   );
 };
-
-export default App;
 
 export default App;
