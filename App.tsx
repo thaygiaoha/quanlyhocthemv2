@@ -41,6 +41,9 @@ const App: React.FC = () => {
       // 2107sua: Đính kèm IDGV của Giáo viên để lấy trạng thái bản quyền mới nhất
       const url = data.idgv ? `${link}${link.indexOf('?') === -1 ? '?' : '&'}idgv=${encodeURIComponent(data.idgv)}` : link;
       const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
       const cloudData = await response.json();
       
       if (cloudData && cloudData.sheets) {
@@ -63,11 +66,13 @@ const App: React.FC = () => {
         if (showAlert) {
           alert("Đồng bộ thành công! Đã tải dữ liệu & kiểm tra bản quyền mới nhất từ Google Sheets.");
         }
+      } else if (showAlert) {
+        alert("Phản hồi từ Google Sheets không có dữ liệu phù hợp.");
       }
-    } catch (err) {
-      console.error("Lỗi đồng bộ:", err);
+    } catch (err: any) {
+      console.warn("Đồng bộ dữ liệu Cloud chưa hoàn tất (Đang ở chế độ Local):", err?.message || err);
       if (showAlert) {
-        alert("Không thể tải dữ liệu. Thầy kiểm tra lại Link Script đã Deploy đúng chưa nhé.");
+        alert("Không thể kết nối đến Google Sheets. Thầy/Cô kiểm tra lại kết nối mạng hoặc Link Script Apps Script nhé.");
       }
     } finally {
       setIsRefreshing(false);
