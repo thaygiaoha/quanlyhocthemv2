@@ -87,12 +87,6 @@ const handleAuth = async () => {
   const handleReset = async (days: number) => {
     if (!selectedClass) return;
     
-    // 2107sua: Ngăn chặn reset ở chế độ xem thử
-    if (data.enableCopyrightCheck !== false && data.licenseStatus !== 'vip') {
-      alert("Thông báo bản quyền VIP:\nBạn đang ở chế độ xem thử (Bản FREE). Vui lòng kích hoạt bản quyền VIP để sử dụng tính năng reset điểm danh.");
-      return;
-    }
-    
     if (window.confirm(`Bạn có chắc chắn muốn RESET ${days} ngày điểm danh gần đây nhất của lớp ${selectedClass.replace("Lop", "")}? Dữ liệu trên Cloud sẽ bị xóa tương ứng.`)) {
       setSyncing(true);
       try {
@@ -125,12 +119,6 @@ const handleAuth = async () => {
   };
   // 2007Them: Hàm reset lịch sử giao dịch học thêm từ transactionkd sang luutransaction
   const handleResetTransactionKD = async () => {
-    // 2107sua: Ngăn chặn reset ở chế độ xem thử
-    if (data.enableCopyrightCheck !== false && data.licenseStatus !== 'vip') {
-      alert("Thông báo bản quyền VIP:\nBạn đang ở chế độ xem thử (Bản FREE). Vui lòng kích hoạt bản quyền VIP để sử dụng tính năng reset lịch sử giao dịch.");
-      return;
-    }
-
     if (window.confirm("CẢNH BÁO (2007Them): Thầy có chắc chắn muốn Reset lịch sử giao dịch học thêm? Hệ thống sẽ chuyển toàn bộ giao dịch từ sheet(transactionkd) sang sheet(luutransaction) và xóa sạch sheet(transactionkd)!")) {
       setSyncing(true);
       try {
@@ -158,12 +146,6 @@ const handleAuth = async () => {
   };
   const handleSave = async (syncCloud: boolean = false) => {
     if (!selectedClass) return;
-
-    // 2107sua: Ngăn chặn lưu điểm danh ở chế độ xem thử
-    if (data.enableCopyrightCheck !== false && data.licenseStatus !== 'vip') {
-      alert("Thông báo bản quyền VIP:\nBạn đang ở chế độ xem thử (Bản FREE). Vui lòng kích hoạt bản quyền VIP để lưu hoặc đồng bộ dữ liệu lên Google Sheets.");
-      return;
-    }
 
     const newData = { ...data };
     const classSheet = newData.sheets[selectedClass];
