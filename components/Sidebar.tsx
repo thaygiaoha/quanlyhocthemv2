@@ -40,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     { id: ViewMode.IMPORT, label: 'Nhập danh sách HT', icon: UserPlus },
     { id: ViewMode.GVCN, label: 'Danh sách lớp GVCN', icon: ClipboardList }, // 1807Them2
     { id: ViewMode.LIST, label: 'Xem danh sách HT', icon: ListOrdered },    
-    { id: ViewMode.ATTENDANCE, label: 'Điểm danh HT', icon: CheckSquare },
+    { id: ViewMode.ATTENDANCE, label: 'Điểm danh', icon: CheckSquare },
     { id: ViewMode.QRCODE, label: 'QR nộp tiền HT', icon: QrCode },
     { id: ViewMode.IMPORT_QR, label: 'Tạo QR từ Excel', icon: FileSpreadsheet },
     { id: ViewMode.PAYMENT_HISTORY, label: 'Nhật ký nộp tiền', icon: History },
