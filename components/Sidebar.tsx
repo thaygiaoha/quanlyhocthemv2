@@ -37,15 +37,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
 
   const menuItems = [
     { id: ViewMode.DASHBOARD, label: 'Tổng quan', icon: LayoutDashboard },
-    { id: ViewMode.IMPORT, label: 'Nhập danh sách', icon: UserPlus },
-    { id: ViewMode.LIST, label: 'Xem danh sách', icon: ListOrdered },
+    { id: ViewMode.IMPORT, label: 'Nhập danh sách HT', icon: UserPlus },
     { id: ViewMode.GVCN, label: 'Danh sách lớp GVCN', icon: ClipboardList }, // 1807Them2
+    { id: ViewMode.LIST, label: 'Xem danh sách HT', icon: ListOrdered },    
     { id: ViewMode.ATTENDANCE, label: 'Điểm danh', icon: CheckSquare },
-    { id: ViewMode.QRCODE, label: 'QR nộp tiền học thêm', icon: QrCode },
+    { id: ViewMode.QRCODE, label: 'QR nộp tiền HT', icon: QrCode },
     { id: ViewMode.IMPORT_QR, label: 'Tạo QR từ Excel', icon: FileSpreadsheet },
     { id: ViewMode.PAYMENT_HISTORY, label: 'Nhật ký nộp tiền', icon: History },
     { id: ViewMode.GEMINI_AI, label: 'Trợ lý Gemini', icon: Sparkles },
-    { id: ViewMode.SETTINGS, label: 'Nhập học phí', icon: Settings },    
+    { id: ViewMode.SETTINGS, label: 'Settings', icon: Settings },    
   ];
 
   // Hàm sao chép nhanh
