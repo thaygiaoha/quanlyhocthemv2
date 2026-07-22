@@ -26,6 +26,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) => {
+  const [showQrModal, setShowQrModal] = useState(false);
   // 2207sua3: Hàm xác minh bản quyền giáo viên từ sheet banquyen
   const handleVerifyLicense = async () => {
     if (data.enableCopyrightCheck === false) {
@@ -281,8 +282,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
   ) : (
     <div className="flex items-center gap-1.5 shrink-0">
       <button 
-        onClick={() => window.open("https://smarteduv2.vercel.app?mode=dkvip", "_blank")}
-        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 rounded-xl transition-all shrink-0 font-extrabold text-xs shadow-md shadow-amber-200"
+        onClick={() => setShowQrModal(false)}
+  className="px-6 py-3 bg-yellow-500 text-white text-[15px] rounded-2xl font-bold"
       >
         <span>ĐK Vip</span>
         <ArrowRight size={13} />
@@ -393,6 +394,72 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
         </div>
 
       </div>
+      {/* --- MODAL QUÉT MÃ QR NÂNG CẤP PRO --- */}
+<AnimatePresence>
+  {showQrModal && (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-3xl w-full max-w-sm p-6 text-center shadow-2xl relative border border-slate-100"
+      >
+        {/* Nút đóng */}
+        <button 
+          onClick={() => setShowQrModal(false)}
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-all"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+          <Zap className="w-6 h-6 fill-yellow-500" />
+        </div>
+
+        <h3 className="text-xl font-bold text-slate-900 mb-1">Nâng cấp tài khoản VIP</h3>
+        <p className="text-xs text-slate-500 mb-4">
+          Mã QR đã bao gồm chính xác số tiền và nội dung chuyển khoản theo IDGV của thầy/cô.
+        </p>
+
+        {/* Mã QR Sinh Tự Động (VietQR) */}
+        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 inline-block mb-4 shadow-inner">
+          <img 
+            src={`https://img.vietqr.io/image/MB-0240198389999-compact2.png?amount=199000&addInfo=${encodeURIComponent(`SEVQR BQ${data?.idgv || ""}`)}&accountName=${encodeURIComponent("NGUYEN VAN HA")}`} 
+            alt="Mã QR Chuyển khoản" 
+            className="w-60 h-60 object-contain rounded-xl"
+          />
+        </div>
+
+        {/* Thông tin xác nhận */}
+        <div className="bg-amber-50/80 rounded-2xl p-3.5 text-left text-xs space-y-1.5 border border-amber-200/60 text-amber-900">
+          <div className="flex justify-between">
+            <span className="text-amber-700">Tài khoản IDGV:</span>
+            <span className="font-bold">{data?.idgv || ""}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-amber-700">Nội dung CK:</span>
+            <span className="font-bold text-blue-700 font-mono">SEVQR BQ{data?.idgv || ""}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-amber-700">Chủ tài khoản:</span>
+            <span className="font-semibold">NGUYEN VAN HA</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-amber-700">Hỗ trợ nhanh:</span>
+            <span className="font-semibold">0988.948.882</span>
+          </div>
+        </div>
+
+        <button 
+          onClick={() => setShowQrModal(false)}
+          className="w-full mt-5 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all text-sm"
+        >
+          Đã chuyển khoản thành công
+        </button>
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
 
     </div>
   );
