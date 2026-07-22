@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { AppData } from '../types';
 import { verifyBanquyen } from './verifyadmin'; // 2207them3
 import { 
   GraduationCap, 
   QrCode, 
-  CheckSquare, 
-  FileWord, 
-  FileText, 
+  CheckSquare,   
   GitBranch, 
   Sparkles, 
   ArrowRight,
