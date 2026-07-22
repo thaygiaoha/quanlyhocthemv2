@@ -240,6 +240,12 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
 
   // suapass: Xác thực tạo QR hàng loạt & tự động lưu mật khẩu
   const handleAuthBulk = async () => {
+    // 2207them3: Kiểm tra bản quyền VIP khi tạo QR hàng loạt
+    if (data.enableCopyrightCheck !== false && data.licenseStatus !== 'vip') {
+      alert("Tính năng tạo QR hàng loạt chỉ dành cho tài khoản VIP. Vui lòng đăng ký/kích hoạt bản quyền VIP để sử dụng!");
+      return;
+    }
+
     if (!bulkPassword.trim()) {
       alert('Vui lòng nhập mật khẩu Admin!');
       return;
@@ -699,6 +705,12 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
 
   // 2207sua: Sửa hàm tải toàn bộ QR hàng loạt (ZIP) hỗ trợ đầy đủ key học sinh
   const handleDownloadBulk = async () => {
+    // 2207them3: Kiểm tra bản quyền VIP khi tải QR hàng loạt
+    if (data.enableCopyrightCheck !== false && data.licenseStatus !== 'vip') {
+      alert("Tính năng tải hàng loạt QR chỉ dành cho tài khoản VIP. Vui lòng đăng ký/kích hoạt bản quyền VIP để sử dụng!");
+      return;
+    }
+
     if (selectedStudentsForBulk.size === 0) {
       alert("Vui lòng chọn ít nhất 1 học sinh trước khi tải hàng loạt!");
       return;
@@ -774,6 +786,12 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
 
   // 2207sua: Sửa hàm tải toàn bộ PDF hàng loạt dạng ZIP
   const handleDownloadBulkPdf = async () => {
+    // 2207them3: Kiểm tra bản quyền VIP khi tải PDF hàng loạt
+    if (data.enableCopyrightCheck !== false && data.licenseStatus !== 'vip') {
+      alert("Tính năng tải hàng loạt phiếu PDF chỉ dành cho tài khoản VIP. Vui lòng đăng ký/kích hoạt bản quyền VIP để sử dụng!");
+      return;
+    }
+
     if (selectedStudentsForBulk.size === 0) {
       alert("Vui lòng chọn ít nhất 1 học sinh trước khi tải hàng loạt PDF!");
       return;
