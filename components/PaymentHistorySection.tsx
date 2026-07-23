@@ -37,32 +37,34 @@ const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data, onUpdate, 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [isAuthorizedV, setIsAuthorizedV] = useState(false);
+  const [isAuthorizedV, setIsAuthorizedV] = useState(() => {
+    return localStorage.getItem('is_authorized_v') === 'true' || data.enableCopyrightCheck === false || data.licenseStatus === 'vip';
+  });
   const [password, setPassword] = useState('');
   
   const handleAuthV = async () => {
-  if (!password.trim()) {
-    alert('Vui lòng nhập mật khẩu!');
-    return;
-  }  
-  setIsChecking(true);
-  try {
-    const key = String(password).toLowerCase().trim();
-    if (key === "16868688") {       
-      setIsAuthorizedV(true);
-      alert('Xác thực thành công!');       
-      // Thêm logic chuyển hướng hoặc set login state của bạn ở đây (nếu có)
-    } else {
-      alert('Sai mật khẩu rồi nhé bạn! (^__^)');
-    }   
-  } catch (error) {
-    console.error("Lỗi xác thực:", error);
-    alert('Đã xảy ra lỗi trong quá trình xác thực.');
-  } finally {
-    // block finally này luôn chạy, giúp đảm bảo tắt trạng thái loading bất kể đúng/sai/lỗi
-    setIsChecking(false); 
-  }
-};
+    if (!password.trim()) {
+      alert('Vui lòng nhập mật khẩu!');
+      return;
+    }  
+    setIsChecking(true);
+    try {
+      const key = String(password).toLowerCase().trim();
+      const pwdC2 = String(data.passwordC2 || "").toLowerCase().trim();
+      if (key === "16868688" || (pwdC2 && key === pwdC2)) {       
+        setIsAuthorizedV(true);
+        localStorage.setItem('is_authorized_v', 'true');
+        alert('Xác thực thành công!');       
+      } else {
+        alert('Sai mật khẩu rồi nhé bạn! (^__^)');
+      }   
+    } catch (error) {
+      console.error("Lỗi xác thực:", error);
+      alert('Đã xảy ra lỗi trong quá trình xác thực.');
+    } finally {
+      setIsChecking(false); 
+    }
+  };
 
 
   // 1. Lấy danh sách học sinh gốc của lớp được chọn và dữ liệu lịch sử (Cột S đến AI)
@@ -603,7 +605,7 @@ if (!isAuthorizedV) {
                                   title="Phụ huynh / GV nhấp vào đây để hiển thị mã QR chuyển khoản"
                                 >
                                   <AlertCircle size={14} className="text-red-600" />
-                                  <span>Nộp ngay</span>
+                                  <span>Chưa nộp/Nộp ngay</span>
                                 </button>
                               )}
                             </td>
