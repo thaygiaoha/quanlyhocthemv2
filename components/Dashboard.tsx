@@ -30,6 +30,7 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) => {
   const [showQrModal, setShowQrModal] = useState(false);
   
+  // 2307sua5: Hiển thị thông báo chi tiết tài khoản (Họ tên - Môn - Trạng thái: Free/Vip) hoặc báo chưa đăng ký tài khoản
   const handleVerifyLicense = async () => {
     if (data.enableCopyrightCheck === false) {
       alert("Hệ thống đang tắt kiểm tra bản quyền (Chế độ Dùng thử miễn phí). Tất cả tính năng đều được sử dụng bình thường!");
@@ -44,23 +45,33 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
 
     try {
       const res = await verifyBanquyen(inputIdgv, inputPass);
-      if (res.success && res.licenseStatus === 'vip') {
+      if (res.success) {
+        const isVip = (res.licenseStatus || '').toLowerCase() === 'vip';
+        const statusText = isVip ? 'VIP' : 'Free';
         const effectiveLink = res.linkScript || data.linkScript || data.sheetLink || "";
+        
         const updatedData: AppData = {
           ...data,
           idgv: res.idgv || inputIdgv,
           fullname: res.fullname || data.fullname,
           mon: res.mon || data.mon,
           idmon: res.idmon || data.idmon,
-          licenseStatus: 'vip',
-          level: res.level || 'Vip',
+          licenseStatus: isVip ? 'vip' : 'free',
+          level: res.level || (isVip ? 'Vip' : 'Free'),
           hetHan: res.hetHan || data.hetHan,
-          checkBanquyen: res.checkBanquyen || 'vip',
+          checkBanquyen: isVip ? 'vip' : 'free',
           linkScript: effectiveLink,
           sheetLink: effectiveLink || data.sheetLink
         };
         onUpdate(updatedData);
-        alert(`Xác thực bản quyền VIP thành công!\nChào mừng Giáo viên: ${res.fullname || inputIdgv}\nCấp độ: ${res.level || 'VIP'}\nHạn sử dụng: ${res.hetHan || 'Vô thời hạn'}`);
+
+        alert(
+          `Xác minh tài khoản thành công!\n` +
+          `- Họ và tên: ${res.fullname || 'Chưa cập nhật'}\n` +
+          `- Môn dạy: ${res.mon || 'Chưa cập nhật'}\n` +
+          `- Trạng thái: ${statusText}` +
+          (isVip && res.hetHan ? `\n- Ngày hết hạn: ${res.hetHan}` : '')
+        );
       } else {
         const updatedData: AppData = {
           ...data,
@@ -68,7 +79,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
           licenseStatus: 'free'
         };
         onUpdate(updatedData);
-        alert(res.message || "Tài khoản chưa được kích hoạt bản quyền VIP hoặc đã hết hạn!");
+        alert("Thầy/Cô chưa đăng ký tài khoản!");
       }
     } catch (err) {
       console.error(err);
@@ -281,7 +292,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
   ) : (
     <div className="flex items-center gap-1.5 shrink-0">
       <button 
-        onClick={() => setShowQrModal(false)}
+        onClick={() => setShowQrModal(true)}
         className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 rounded-xl transition-all shrink-0 font-extrabold text-xs shadow-md shadow-amber-200"
       >
         <span>ĐK Vip</span>
@@ -292,7 +303,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
         className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all text-xs font-bold"
         title="Nhấp để xác minh bản quyền đã đăng ký"
       >
-        Tài khoản
+        Xác minh
       </button>
     </div>
   )
