@@ -1,4 +1,3 @@
-// 2107them / 2107sua: SettingsSection quản lý bản quyền học tập
 import React, { useState, useEffect } from 'react';
 import { Save, Key, Database, DollarSign, RefreshCw, Loader2, Lock, ShieldCheck, ToggleLeft, ToggleRight, Phone, EyeOff, Eye, User } from 'lucide-react';
 import { AppData } from '../types';
@@ -27,6 +26,16 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
     }
   }, [data]);
 
+  const updateFee = (className: string, fee: number) => {
+    const updatedFees = config.fees.map(f => 
+      f.className === className ? { ...f, fee } : f
+    );
+    if (!updatedFees.some(f => f.className === className)) {
+      updatedFees.push({ className, fee });
+    }
+    setConfig({ ...config, fees: updatedFees });
+  };
+
   const handleAuth = async () => {
     if (!idgv.trim()) {
       alert('Vui lòng nhập số điện thoại IDGV!');
@@ -38,29 +47,28 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
     }
     setIsChecking(true);
     try {
-      if (data.sheetLink) {
-        // 2107sua: Xác thực qua API banquyen trên Google Sheets
-        const result = await verifyBanquyen(URL_ADMIN, idgv, password);
-        
-        if (result.success) {
-          setIsAuthorized(true);
-          const updatedConfig = {
-            ...config,
-            idgv: result.idgv || idgv,
-            fullname: result.fullname || '',
-            mon: result.mon || '',
-            idmon: result.idmon || '',
-            licenseStatus: result.licenseStatus || '',
-            linkScript: result.linkScript || config.linkScript || ''
-          };
-          setConfig(updatedConfig);
-          onUpdate(updatedConfig);
-          alert(`Xác thực thành công!\nChào mừng Giáo viên: ${result.fullname || idgv}`);
-        } else {
-          alert(result.message || 'Xác thực thất bại! Sai IDGV hoặc mật khẩu.');
-        }
+      // Xác thực tài khoản giáo viên qua Google Sheet của Admin (URL_ADMIN)
+      const result = await verifyBanquyen(idgv, password);
+      
+      if (result.success) {
+        setIsAuthorized(true);
+        // Tự động dùng Link Script trả về từ Google Sheet Admin (cột G)
+        const effectiveLink = result.linkScript || config.sheetLink || config.linkScript || '';
+        const updatedConfig = {
+          ...config,
+          idgv: result.idgv || idgv,
+          fullname: result.fullname || '',
+          mon: result.mon || '',
+          idmon: result.idmon || '',
+          licenseStatus: result.licenseStatus || '',
+          linkScript: effectiveLink,
+          sheetLink: effectiveLink
+        };
+        setConfig(updatedConfig);
+        onUpdate(updatedConfig);
+        alert(`Xác thực thành công!\nChào mừng Giáo viên: ${result.fullname || idgv}`);
       } else {
-        alert("Không tìm thấy liên kết Google Sheets!");
+        alert(result.message || 'Xác thực thất bại! Sai IDGV hoặc mật khẩu.');
       }
     } catch (err) {
       console.error(err);
@@ -70,43 +78,42 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
     }
   };
 
-  // 2307sua1: Cập nhật toàn hệ thống và tự động ghi nhận Link Script vào cột G (Sheet banquyen)
+  // Cập nhật toàn hệ thống và tự động ghi nhận Link Script vào cột G trên Google Sheet Admin (URL_ADMIN)
   const handleSaveAll = async () => {
+    const targetIdgv = idgv || config.idgv || '';
+    const linkToSave = (config.sheetLink && config.sheetLink.trim()) ? config.sheetLink.trim() : (config.linkScript || '');
+
     const updatedConfig = {
       ...config,
-      idgv: idgv || config.idgv || ''
+      idgv: targetIdgv,
+      sheetLink: linkToSave,
+      linkScript: linkToSave
     };
     setConfig(updatedConfig);
     onUpdate(updatedConfig);
     
+    // Tự động gửi Link Script của GV lên Google Sheet Admin (URL_ADMIN) để admin quản lý tập trung
+    let scriptNote = '';
+    if (linkToSave && targetIdgv) {
+      const resScript = await updateLinkScriptOnSheet(targetIdgv, password, linkToSave);
+      if (resScript && resScript.success) {
+        scriptNote = '\n✓ Đã ghi nhận Link Script vào Google Sheet Admin thành công!';
+      }
+    }
+
     if (updatedConfig.sheetLink && window.confirm("Xác nhận cập nhật cấu hình và đồng bộ lên Google Sheets?")) {
         setSyncing(true);
         try {
-            // 1. Đồng bộ cấu hình học phí & mật khẩu C2 lên Google Sheets
             await syncSettingsToSheet(updatedConfig.sheetLink, updatedConfig.passwordC2, updatedConfig.fees);
-            
-            // 2307them1: Ghi Link Script (cột G) của Giáo viên vào sheet banquyen khi GV đồng bộ
-            const targetIdgv = idgv || updatedConfig.idgv || '';
-            const linkToSave = (updatedConfig.linkScript && updatedConfig.linkScript.trim()) ? updatedConfig.linkScript.trim() : updatedConfig.sheetLink;
-            
-            let scriptNote = '';
-            if (linkToSave && targetIdgv) {
-              // 2307sua1: Gọi API cập nhật link script lên cột G của sheet banquyen
-              const resScript = await updateLinkScriptOnSheet(updatedConfig.sheetLink, targetIdgv, password, linkToSave);
-              if (resScript && resScript.success) {
-                scriptNote = '\n✓ Đã tự động ghi nhận Link Script vào cột G (Sheet banquyen) thành công!';
-              }
-            }
-            
             alert(`Đồng bộ thành công cấu hình hệ thống & Link Script lên Google Sheets!${scriptNote}`);
         } catch (err) {
-            console.error("2307sua1: Lỗi khi lưu cấu hình:", err);
-            alert('Đồng bộ thất bại! Bạn hãy kiểm tra lại kết nối mạng nhé.');
+            console.error("Lỗi khi lưu cấu hình:", err);
+            alert(`Đã lưu cấu hình cục bộ! ${scriptNote}`);
         } finally {
             setSyncing(false);
         }
     } else {
-        alert('Đã lưu cấu hình cục bộ thành công!');
+        alert(`Đã lưu cấu hình cục bộ thành công!${scriptNote}`);
     }
   };
 
@@ -136,19 +143,13 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
     }
   };
 
-  // 2207them3: Hàm bảo mật kiểm tra Mật khẩu Quản trị C2 của URL_ADMIN khi thay đổi Bật/Tắt bản quyền
+  // Kiểm tra Mật khẩu Quản trị C2 của URL_ADMIN khi thay đổi Bật/Tắt bản quyền
   const handleToggleCopyright = async () => {
     const pwd = prompt("Yêu cầu nhập Mật khẩu Quản trị Hệ thống (C2 Admin) để Bật/Tắt bản quyền:");
     if (!pwd || !pwd.trim()) return;
 
-    const targetAdminUrl = URL_ADMIN || config.sheetLink;
-    if (!targetAdminUrl) {
-      alert("Chưa cấu hình URL_ADMIN hoặc Google Sheets Link để xác minh mật khẩu Admin!");
-      return;
-    }
-
     try {
-      const res = await verifyAdminPassword(targetAdminUrl, pwd.trim());
+      const res = await verifyAdminPassword(URL_ADMIN, pwd.trim());
       if (res.success) {
         const nextState = config.enableCopyrightCheck === false ? true : false;
         const updated = { ...config, enableCopyrightCheck: nextState };
@@ -233,7 +234,7 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in duration-500">
       <div className="space-y-6">
         
-        {/* Khối Thông tin giáo viên & Bản quyền (2107them) */}
+        {/* Khối Thông tin giáo viên & Bản quyền */}
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
           <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
             <ShieldCheck className="text-emerald-500" /> Thông tin Bản quyền Giáo viên
@@ -264,17 +265,6 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Link Script của bạn (Cột G)</label>
-              <input 
-                type="text" 
-                value={config.linkScript || ''}
-                onChange={(e) => setConfig({ ...config, linkScript: e.target.value })}
-                placeholder="Nhập liên kết Google Apps Script cá nhân..."
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-indigo-600 text-xs"
-              />
-            </div>
-
             <div className="flex items-center justify-between p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
               <div>
                 <h4 className="text-xs font-extrabold text-indigo-900">Bắt buộc kiểm tra Bản quyền</h4>
@@ -299,10 +289,10 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
           </div>
         </div>
 
-        {/* Khối liên kết Google Sheet */}
+        {/* Khối liên kết Google Sheet cá nhân của Giáo viên */}
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
           <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-            <Key className="text-amber-500" /> Cấu hình Kết nối Google Sheet
+            <Key className="text-amber-500" /> Link Google Apps Script cá nhân Giáo viên
           </h3>
           <div className="space-y-5">
             <div>
@@ -316,20 +306,25 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Google Apps Script Web App URL</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                Link Web App cá nhân (data.sheetLink)
+              </label>
+              <p className="text-[11px] text-slate-400 mb-2 leading-relaxed">
+                Nơi lưu/đọc danh sách học sinh, điểm danh, xóa/thêm học sinh, tính học phí và tạo mã QR. Link này sẽ tự động ghi nhận vào cột G của Google Sheet Admin.
+              </p>
               <div className="flex gap-2">
                 <input 
                   type="text" 
-                  value={config.sheetLink}
-                  onChange={(e) => setConfig({ ...config, sheetLink: e.target.value })}
-                  placeholder="https://script.google.com/..."
+                  value={config.sheetLink || ''}
+                  onChange={(e) => setConfig({ ...config, sheetLink: e.target.value, linkScript: e.target.value })}
+                  placeholder="https://script.google.com/macros/s/.../exec"
                   onKeyDown={(e) => e.key === 'Enter' && handleTestConnection()}
-                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 outline-none bg-slate-50 text-xs font-mono text-slate-600"
+                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 outline-none bg-slate-50 text-xs font-mono font-bold text-indigo-600"
                 />
                 <button 
                   onClick={handleTestConnection}
                   disabled={testing}
-                  title="Kiểm tra kết nối và nạp dữ liệu"
+                  title="Kiểm tra kết nối và nạp dữ liệu từ Google Sheet cá nhân"
                   className="px-4 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors"
                 >
                   {testing ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
