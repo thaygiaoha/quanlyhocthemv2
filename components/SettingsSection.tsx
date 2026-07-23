@@ -15,6 +15,7 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
   const [showPassword, setShowPassword] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
+  const [savedAuthPassword, setSavedAuthPassword] = useState('');
   const [config, setConfig] = useState(data);
   const [testing, setTesting] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -52,8 +53,13 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
       
       if (result.success) {
         setIsAuthorized(true);
-        // Tự động dùng Link Script trả về từ Google Sheet Admin (cột G)
-        const effectiveLink = result.linkScript || config.sheetLink || config.linkScript || '';
+        setSavedAuthPassword(password.trim());
+
+        // Tự động dùng Link Script trả về từ Google Sheet Admin (cột G) nếu có, hoặc dùng sheetLink hiện tại
+        const scriptFromAdmin = result.linkScript ? result.linkScript.trim() : '';
+        const currentSheetLink = config.sheetLink ? config.sheetLink.trim() : '';
+        const effectiveLink = scriptFromAdmin || currentSheetLink;
+
         const updatedConfig = {
           ...config,
           idgv: result.idgv || idgv,
@@ -66,6 +72,16 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
         };
         setConfig(updatedConfig);
         onUpdate(updatedConfig);
+
+        // Tự động ghi nhận link cá nhân lên URL_ADMIN nếu có
+        if (effectiveLink && (result.idgv || idgv)) {
+          updateLinkScriptOnSheet(result.idgv || idgv, password.trim(), effectiveLink).then(res => {
+            if (res && res.success) {
+              console.log("Đã tự động cập nhật Link Web App cá nhân lên Admin Sheet (URL_ADMIN)");
+            }
+          });
+        }
+
         alert(`Xác thực thành công!\nChào mừng Giáo viên: ${result.fullname || idgv}`);
       } else {
         alert(result.message || 'Xác thực thất bại! Sai IDGV hoặc mật khẩu.');
@@ -81,6 +97,7 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
   // Cập nhật toàn hệ thống và tự động ghi nhận Link Script vào cột G trên Google Sheet Admin (URL_ADMIN)
   const handleSaveAll = async () => {
     const targetIdgv = idgv || config.idgv || '';
+    const activePass = password.trim() || savedAuthPassword || config.passwordC2 || '';
     const linkToSave = (config.sheetLink && config.sheetLink.trim()) ? config.sheetLink.trim() : (config.linkScript || '');
 
     const updatedConfig = {
@@ -92,20 +109,22 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
     setConfig(updatedConfig);
     onUpdate(updatedConfig);
     
-    // Tự động gửi Link Script của GV lên Google Sheet Admin (URL_ADMIN) để admin quản lý tập trung
+    // Tự động gửi Link Script cá nhân của GV lên Google Sheet Admin (URL_ADMIN) để admin quản lý tập trung
     let scriptNote = '';
     if (linkToSave && targetIdgv) {
-      const resScript = await updateLinkScriptOnSheet(targetIdgv, password, linkToSave);
+      const resScript = await updateLinkScriptOnSheet(targetIdgv, activePass, linkToSave);
       if (resScript && resScript.success) {
-        scriptNote = '\n✓ Đã ghi nhận Link Script vào Google Sheet Admin thành công!';
+        scriptNote = '\n✓ Đã ghi nhận Link Web App cá nhân vào Google Sheet Admin thành công!';
+      } else if (resScript && resScript.message) {
+        scriptNote = `\nLưu ý Admin Sheet: ${resScript.message}`;
       }
     }
 
-    if (updatedConfig.sheetLink && window.confirm("Xác nhận cập nhật cấu hình và đồng bộ lên Google Sheets?")) {
+    if (updatedConfig.sheetLink && window.confirm("Xác nhận cập nhật cấu hình và đồng bộ lên Google Sheets cá nhân?")) {
         setSyncing(true);
         try {
             await syncSettingsToSheet(updatedConfig.sheetLink, updatedConfig.passwordC2, updatedConfig.fees);
-            alert(`Đồng bộ thành công cấu hình hệ thống & Link Script lên Google Sheets!${scriptNote}`);
+            alert(`Đồng bộ thành công cấu hình hệ thống & Link Script lên Google Sheets cá nhân!${scriptNote}`);
         } catch (err) {
             console.error("Lỗi khi lưu cấu hình:", err);
             alert(`Đã lưu cấu hình cục bộ! ${scriptNote}`);
@@ -114,6 +133,37 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
         }
     } else {
         alert(`Đã lưu cấu hình cục bộ thành công!${scriptNote}`);
+    }
+  };
+
+  // Nút gửi trực tiếp Link Script cá nhân lên Google Sheet Admin (URL_ADMIN)
+  const handleSyncLinkToAdmin = async () => {
+    const targetIdgv = idgv || config.idgv || '';
+    const activePass = password.trim() || savedAuthPassword || config.passwordC2 || '';
+    const linkToSave = (config.sheetLink && config.sheetLink.trim()) ? config.sheetLink.trim() : (config.linkScript || '');
+
+    if (!targetIdgv) {
+      alert("Thiếu số điện thoại IDGV!");
+      return;
+    }
+    if (!linkToSave) {
+      alert("Vui lòng nhập Link Web App cá nhân của Giáo viên trước!");
+      return;
+    }
+
+    setTesting(true);
+    try {
+      const res = await updateLinkScriptOnSheet(targetIdgv, activePass, linkToSave);
+      if (res && res.success) {
+        alert(`✓ Đã ghi nhận Link Web App cá nhân (${linkToSave}) vào cột G sheet banquyen trên Google Sheet Admin thành công!`);
+      } else {
+        alert(`Không thể ghi vào Sheet Admin: ${res?.message || 'Lỗi không xác định'}`);
+      }
+    } catch (err) {
+      console.error("Lỗi khi ghi lên URL_ADMIN:", err);
+      alert("Lỗi kết nối tới máy chủ Google Sheet Admin!");
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -312,22 +362,34 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
               <p className="text-[11px] text-slate-400 mb-2 leading-relaxed">
                 Nơi lưu/đọc danh sách học sinh, điểm danh, xóa/thêm học sinh, tính học phí và tạo mã QR. Link này sẽ tự động ghi nhận vào cột G của Google Sheet Admin.
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap sm:flex-nowrap gap-2">
                 <input 
                   type="text" 
                   value={config.sheetLink || ''}
                   onChange={(e) => setConfig({ ...config, sheetLink: e.target.value, linkScript: e.target.value })}
                   placeholder="https://script.google.com/macros/s/.../exec"
                   onKeyDown={(e) => e.key === 'Enter' && handleTestConnection()}
-                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 outline-none bg-slate-50 text-xs font-mono font-bold text-indigo-600"
+                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 outline-none bg-slate-50 text-xs font-mono font-bold text-indigo-600 min-w-[200px]"
                 />
                 <button 
+                  type="button"
                   onClick={handleTestConnection}
                   disabled={testing}
                   title="Kiểm tra kết nối và nạp dữ liệu từ Google Sheet cá nhân"
-                  className="px-4 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors"
+                  className="px-3 py-2 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors text-xs font-bold flex items-center gap-1.5 shrink-0"
                 >
-                  {testing ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
+                  {testing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                  <span>Kiểm tra</span>
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleSyncLinkToAdmin}
+                  disabled={testing}
+                  title="Ghi nhận Link Web App cá nhân vào Cột G Sheet Admin (URL_ADMIN)"
+                  className="px-3 py-2 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200 hover:bg-emerald-100 transition-colors text-xs font-bold flex items-center gap-1.5 shrink-0"
+                >
+                  <Save size={16} />
+                  <span>Ghi lên Admin</span>
                 </button>
               </div>
             </div>
