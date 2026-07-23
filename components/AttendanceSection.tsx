@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckSquare, Lock, Search, CheckCircle2, XCircle, CloudUpload, Loader2, Calendar, Eye, RefreshCw } from 'lucide-react'; // 1807Sua
+import { CheckSquare, Lock, Search, CheckCircle2, XCircle, CloudUpload, Loader2, Calendar, Eye, RefreshCw } from 'lucide-react';
 //import { CheckSquare, Lock, Save, Search, CheckCircle2, XCircle, CloudUpload, Loader2, Calendar } from 'lucide-react';
 import { AppData } from '../types';
 import { calculateTotal, syncAttendanceToSheet } from '../services/storage';
@@ -20,7 +20,7 @@ const AttendanceSection: React.FC<AttendanceSectionProps> = ({ data, onUpdate, o
   const [attendanceMap, setAttendanceMap] = useState<{ [key: string]: boolean }>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [syncing, setSyncing] = useState(false);
-  const [showDetailedTable, setShowDetailedTable] = useState(false); //1807Them
+  const [showDetailedTable, setShowDetailedTable] = useState(false);
     // 1. Thêm state lưu ngày chọn (Mặc định lấy ngày hiện tại định dạng YYYY-MM-DD)
 // Giữ nguyên định dạng YYYY-MM-DD ở state để các component input[type="date"] (nếu có) hoạt động chính xác
 const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -70,11 +70,11 @@ const handleAuth = async () => {
 };
   const handleSelectClass = (className: string) => {
   setSelectedClass(className);
-  setShowDetailedTable(false); // 1807Them: Tự động ẩn bảng chi tiết khi thầy chuyển lớp mới
+  setShowDetailedTable(false);
   const initialMap: { [key: string]: boolean } = {};
   data.sheets[className]?.students.forEach(s => {
     // Ưu tiên dùng code, nếu không có mới dùng tổ hợp s.phoneNumber + s.name để dự phòng
-    const studentKey = s.code ? s.code.trim() : ''; // 1807Sua
+    const studentKey = s.code ? s.code.trim() : '';
     initialMap[studentKey] = true; // Mặc định là có mặt
   });
   setAttendanceMap(initialMap);
@@ -106,7 +106,7 @@ const handleAuth = async () => {
         // Đưa giao diện hiện tại tạm thời về vắng mặt để tích lại
         const resetMap: { [key: string]: boolean } = {};
         data.sheets[selectedClass]?.students.forEach(s => {
-          resetMap[s.code ? s.code.trim() : ''] = false; // 1807Sua
+          resetMap[s.code ? s.code.trim() : ''] = false;
         });
         setAttendanceMap(resetMap);
 
@@ -117,9 +117,9 @@ const handleAuth = async () => {
       }
     }
   };
-  // 2007Them: Hàm reset lịch sử giao dịch học thêm từ transactionkd sang luutransaction
+  // Hàm reset lịch sử giao dịch học thêm từ transactionkd sang luutransaction
   const handleResetTransactionKD = async () => {
-    if (window.confirm("CẢNH BÁO (2007Them): Thầy có chắc chắn muốn Reset lịch sử giao dịch học thêm? Hệ thống sẽ chuyển toàn bộ giao dịch từ sheet(transactionkd) sang sheet(luutransaction) và xóa sạch sheet(transactionkd)!")) {
+    if (window.confirm("CẢNH BÁO: Thầy có chắc chắn muốn Reset lịch sử giao dịch học thêm? Hệ thống sẽ chuyển toàn bộ giao dịch từ sheet(transactionkd) sang sheet(luutransaction) và xóa sạch sheet(transactionkd)!")) {
       setSyncing(true);
       try {
         if (data.sheetLink) {
@@ -155,7 +155,7 @@ const handleAuth = async () => {
     const formattedDate = formatDateToDDMMYY(selectedDate);
 
     const studentsToSync = classSheet.students.map(student => {
-    const studentKey = student.code ? student.code.trim() : ''; // 1807Sua
+    const studentKey = student.code ? student.code.trim() : '';
       const isPresent = attendanceMap[studentKey];
       const val = isPresent ? 1 : 0;
       
@@ -311,7 +311,7 @@ const handleAuth = async () => {
                 {syncing ? <Loader2 size={14} className="animate-spin" /> : <CloudUpload size={18} />} 
                 Save
               </button>
-              {/* 1807Them: Nút xem điểm danh chi tiết từ cột A đến Q của thầy */}
+              {/* Nút xem điểm danh chi tiết từ cột A đến Q của thầy */}
 <button 
   type="button"
   onClick={() => setShowDetailedTable(!showDetailedTable)}
@@ -346,7 +346,7 @@ const handleAuth = async () => {
 </div>
             </div>
           </div>
-{/* 1807Them: Bảng hiển thị thông tin điểm danh chi tiết từ cột A đến Q của lớp học */}
+{/* Bảng hiển thị thông tin điểm danh chi tiết từ cột A đến Q của lớp học */}
           {showDetailedTable && (() => {
             const classSheet = data.sheets[selectedClass];
             const headers = classSheet?.headers || [];
@@ -511,7 +511,7 @@ const handleAuth = async () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredStudents.length > 0 ? filteredStudents.map((student, idx) => {
-                   const key = student.code ? student.code.trim() : ''; // 1807Sua
+                   const key = student.code ? student.code.trim() : '';
                   const isPresent = attendanceMap[key];                  
                   return (
                     <tr key={key} className="hover:bg-slate-50 transition-colors group">
