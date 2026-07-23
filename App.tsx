@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ViewMode, AppData } from './types';
 import { getAppData, saveAppData } from './services/storage';
-import { Users, RefreshCw } from 'lucide-react'; // Thêm icon làm mới
+import { Users, RefreshCw } from 'lucide-react';
 
 // Components
 import Sidebar from './components/Sidebar';
@@ -18,14 +18,18 @@ import GVCNSection from './components/GVCNSection';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewMode>(ViewMode.DASHBOARD);
-  const [isRefreshing, setIsRefreshing] = useState(false); // Trạng thái xoay icon loading
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // 1. Khởi tạo dữ liệu: Ưu tiên lấy từ LocalStorage
   const [data, setData] = useState<AppData>(() => {
     const saved = localStorage.getItem('hocphi_data');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (!parsed.sheetLink || parsed.sheetLink.includes('AKfycbxU1gFzMDIzYbWxAh70658gBw6czUAhyhud7VqbZWMD1OYlZfqDR5M7W7wfxz831e3gXA')) {
+          parsed.sheetLink = 'https://script.google.com/macros/s/AKfycbwlglx696Wr0BCj8SMAvwh1hlfFg66uemInbxI2W0TdE96wY67eZx_AAxxD5RJnl04NXg/exec';
+        }
+        return parsed;
       } catch (e) {
         console.error("Lỗi dữ liệu LocalStorage:", e);
       }
@@ -33,12 +37,21 @@ const App: React.FC = () => {
     return getAppData(); 
   });
 
-  // 2. Hàm kéo dữ liệu từ tất cả các Sheet về App (Cải tiến: showAlert)
+  // 2307them2: Kiểm tra trạng thái đã kết nối Link Script
+  const hasSheetLink = Boolean(data.sheetLink && data.sheetLink.trim() !== '');
+
+  // 2307sua2: Giới hạn truy cập - Nếu chưa kết nối Link Script thì tự động đưa về Dashboard nếu đang truy cập chức năng khác
+  useEffect(() => {
+    if (!hasSheetLink && view !== ViewMode.DASHBOARD && view !== ViewMode.SETTINGS) {
+      setView(ViewMode.DASHBOARD);
+    }
+  }, [view, hasSheetLink]);
+
+  // 2. Hàm kéo dữ liệu từ tất cả các Sheet về App
   const refreshDataFromCloud = async (link: string, showAlert: boolean = false) => {
     if (!link) return;
     setIsRefreshing(true);
     try {
-      // 2107sua: Đính kèm IDGV của Giáo viên để lấy trạng thái bản quyền mới nhất
       const url = data.idgv ? `${link}${link.indexOf('?') === -1 ? '?' : '&'}idgv=${encodeURIComponent(data.idgv)}` : link;
       const response = await fetch(url);
       if (!response.ok) {
@@ -51,7 +64,6 @@ const App: React.FC = () => {
           ...data, 
           sheets: cloudData.sheets, 
           passwordC2: cloudData.password || data.passwordC2,
-          // 2107them: Tự động cập nhật thông tin bản quyền và giáo viên từ Cloud
           licenseStatus: cloudData.licenseStatus !== undefined ? cloudData.licenseStatus : data.licenseStatus,
           fullname: cloudData.fullname !== undefined ? cloudData.fullname : data.fullname,
           mon: cloudData.mon !== undefined ? cloudData.mon : data.mon,
@@ -62,7 +74,6 @@ const App: React.FC = () => {
         setData(updatedData);
         localStorage.setItem('hocphi_data', JSON.stringify(updatedData));
         
-        // Chỉ hiện thông báo khi thầy chủ động bấm nút
         if (showAlert) {
           alert("Đồng bộ thành công! Đã tải dữ liệu & kiểm tra bản quyền mới nhất từ Google Sheets.");
         }
@@ -98,12 +109,13 @@ const App: React.FC = () => {
     saveAppData(data);
   }, [data]);
 
-  // 5. Tự động đồng bộ NGẦM khi vừa mở App (Không hiện alert gây phiền)
+  // 5. Tự động đồng bộ NGẦM khi vừa mở App
   useEffect(() => {
     if (data.sheetLink) {
-      refreshDataFromCloud(data.sheetLink, false); // false để chạy ngầm im lặng
+      refreshDataFromCloud(data.sheetLink, false);
     }
   }, []);  
+
   const renderContent = () => {
     switch (view) {
       case ViewMode.DASHBOARD:
@@ -117,7 +129,6 @@ const App: React.FC = () => {
           <ImportSection 
             data={data} 
             onUpdate={handleUpdateData}            
-            //onRefreshData={() => refreshDataFromCloud(data.sheetLink, true)} // <-- TRUYỀN XUỐNG ĐÂY
           />
         );
       case ViewMode.LIST:
@@ -125,42 +136,41 @@ const App: React.FC = () => {
           <ListSection 
             data={data} 
             onUpdate={handleUpdateData}
-            onRefreshData={() => refreshDataFromCloud(data.sheetLink, false)} // 2207themdelete
+            onRefreshData={() => refreshDataFromCloud(data.sheetLink, false)}
           />
         );
       case ViewMode.ATTENDANCE:
-  return (
-    <AttendanceSection 
-      data={data} 
-      onUpdate={handleUpdateData}       
-       onRefreshData={() => refreshDataFromCloud(data.sheetLink, true)} // 1807Sua
-    />
-  );
+        return (
+          <AttendanceSection 
+            data={data} 
+            onUpdate={handleUpdateData}       
+            onRefreshData={() => refreshDataFromCloud(data.sheetLink, true)}
+          />
+        );
       case ViewMode.SETTINGS:
         return <SettingsSection data={data} onUpdate={handleUpdateData} />;
       case ViewMode.PAYMENT_HISTORY:
-  return (
-    <PaymentHistorySection 
-      data={data} 
-      onUpdate={handleUpdateData} 
-      //onRefreshData={() => refreshDataFromCloud(data.sheetLink, true)} // <-- TRUYỀN THÊM DÒNG NÀY VÀO THẦY NHÉ
-    />
-  );
-    case ViewMode.QRCODE:
+        return (
+          <PaymentHistorySection 
+            data={data} 
+            onUpdate={handleUpdateData} 
+          />
+        );
+      case ViewMode.QRCODE:
         return (
           <QRCalculator 
             data={data} 
             onUpdate={handleUpdateData} 
           />
         );
-      case ViewMode.IMPORT_QR: // Sửa lần 2: Thêm đường dẫn hiển thị Tạo QR từ Excel
+      case ViewMode.IMPORT_QR:
         return (
           <ImportQR 
             data={data} 
             onUpdate={handleUpdateData} 
           />
         );
-         case ViewMode.GVCN: // 1807Them2: Render GVCN section
+      case ViewMode.GVCN:
         return (
           <GVCNSection 
             data={data} 
@@ -168,7 +178,6 @@ const App: React.FC = () => {
             onRefreshData={() => refreshDataFromCloud(data.sheetLink, true)}
           />
         );
-      
       case ViewMode.GEMINI_AI:
         return <GeminiSection data={data} />;
       default:
@@ -178,7 +187,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <Sidebar currentView={view} setView={setView} />
+      <Sidebar currentView={view} setView={setView} hasSheetLink={hasSheetLink} />
       
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         <header className="mb-8 flex items-center justify-between">
@@ -203,7 +212,7 @@ const App: React.FC = () => {
              <div className="hidden md:block text-right">
                 <p className="text-sm font-medium text-slate-700">Trạng thái Google</p>
                 <p className={`text-xs font-mono ${data.sheetLink ? 'text-green-500' : 'text-amber-500'}`}>
-                  {data.sheetLink ? 'Đã kết nối Cloud' : 'Chế độ Local'}
+                  {data.sheetLink ? 'Đã kết nối Cloud' : 'Chưa có Link Script'}
                 </p>
              </div>
              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-200">
@@ -213,8 +222,6 @@ const App: React.FC = () => {
         </header>
 
         <div className="max-w-7xl mx-auto">
-
-
           {renderContent()}
         </div>
       </main>
