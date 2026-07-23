@@ -198,12 +198,12 @@ const handleManualAdd = async () => {
   if (!newData.sheets[gradeKey]) {
     newData.sheets[gradeKey] = { className: gradeKey, students: [] };
   }
-  // 1807Them: Kiểm tra trùng mã học sinh cục bộ trước khi thêm thủ công
+  // Kiểm tra trùng mã học sinh cục bộ trước khi thêm thủ công
   const isDuplicate = newData.sheets[gradeKey].students.some(
     (s: Student) => String(s.code).toLowerCase().trim() === manualStudent.code.toLowerCase().trim()
   );
   if (isDuplicate) {
-    alert(`Mã học sinh ${manualStudent.code} đã tồn tại trong lớp này rồi thầy nhé!`); // 1807Them
+    alert(`Mã học sinh ${manualStudent.code} đã tồn tại trong lớp này rồi thầy nhé!`);
     return;
   }
 
