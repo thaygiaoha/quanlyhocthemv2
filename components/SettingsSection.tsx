@@ -140,7 +140,7 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
   const handleSyncLinkToAdmin = async () => {
     const targetIdgv = idgv || config.idgv || '';
     const activePass = password.trim() || savedAuthPassword || config.passwordC2 || '';
-    const linkToSave = (config.sheetLink && config.sheetLink.trim()) ? config.sheetLink.trim() : (config.linkScript || '');
+    const linkToSave = URL_ADMIN;
 
     if (!targetIdgv) {
       alert("Thiếu số điện thoại IDGV!");
