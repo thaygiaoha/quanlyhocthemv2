@@ -595,7 +595,7 @@ if (!isAuthorizedV) {
                                   title="Phụ huynh / GV nhấp vào đây để hiển thị mã QR chuyển khoản"
                                 >
                                   <AlertCircle size={14} className="text-red-600" />
-                                  <span>Chưa nộp</span>
+                                  <span>Nộp ngay</span>
                                 </button>
                               )}
                             </td>
