@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Key, Database, DollarSign, RefreshCw, Loader2, Lock, ShieldCheck, ToggleLeft, ToggleRight, Phone, EyeOff, Eye, User } from 'lucide-react';
+import { Save, Key, Database, DollarSign, RefreshCw, Loader2, Lock, ShieldCheck, ToggleLeft, ToggleRight, Phone, EyeOff, Eye, User, QrCode, Building2 } from 'lucide-react';
 import { AppData } from '../types';
 import { fetchFromSheet, syncSettingsToSheet } from '../services/storage';
 import { verifyBanquyen, updateLinkScriptOnSheet, verifyAdminPassword, URL_ADMIN } from './verifyadmin';
@@ -120,12 +120,21 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
       }
     }
 
-    // Ghi Mật khẩu Ô C2 và thông số Mức học phí lên Google Sheet cá nhân (data.sheetLink)
-    if (updatedConfig.sheetLink && window.confirm("Xác nhận cập nhật Mật khẩu Ô C2 & Mức học phí lên Google Sheets cá nhân?")) {
+    // Ghi Mật khẩu Ô C2, Thông tin Ngân hàng và thông số Mức học phí lên Google Sheet cá nhân (data.sheetLink)
+    if (updatedConfig.sheetLink && window.confirm("Xác nhận cập nhật Mật khẩu C2, Ngân hàng & Mức học phí lên Google Sheets cá nhân?")) {
         setSyncing(true);
         try {
-            await syncSettingsToSheet(updatedConfig.sheetLink, updatedConfig.passwordC2, updatedConfig.fees);
-            alert(`Đồng bộ thành công Mật khẩu Ô C2 & Mức học phí lên Google Sheets cá nhân!${scriptNote}`);
+            await syncSettingsToSheet(
+              updatedConfig.sheetLink, 
+              updatedConfig.passwordC2, 
+              updatedConfig.fees,
+              {
+                bankId: updatedConfig.bankId,
+                bankAccountNo: updatedConfig.bankAccountNo,
+                bankAccountName: updatedConfig.bankAccountName
+              }
+            );
+            alert(`Đồng bộ thành công Mật khẩu C2, Ngân hàng & Mức học phí lên Google Sheets cá nhân!${scriptNote}`);
         } catch (err) {
             console.error("Lỗi khi lưu cấu hình:", err);
             alert(`Đã lưu cấu hình cục bộ! ${scriptNote}`);
@@ -346,6 +355,82 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
                   <ToggleLeft size={40} className="text-slate-400" />
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Khối Cấu hình Ngân hàng chuyển khoản (VietQR) */}
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+          <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+            <Building2 className="text-indigo-600" /> Cấu hình Tài khoản Ngân hàng nhận học phí (VietQR)
+          </h3>
+          <p className="text-xs text-slate-400 mb-5 leading-relaxed">
+            Thông tin này dùng để tự động tạo mã VietQR chuyển khoản học phí chính xác cho học sinh & phụ huynh. Dữ liệu sẽ lưu vào Google Sheet cá nhân (ô C3, C4, C5 sheet <code className="bg-slate-100 text-indigo-600 px-1 rounded font-mono font-bold">hocphi</code>).
+          </p>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Ngân hàng thụ hưởng (bankId / Tên ngân hàng)</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <select
+                  value={['Vietinbank','Vietcombank','MB','Techcombank','BIDV','Agribank','ACB','VPBank','TPBank','Sacombank','VIB','HDBank','LPBank','MSB','SHB','SeABank','OCB'].includes(config.bankId || '') ? config.bankId : (config.bankId ? 'Khac' : 'Vietinbank')}
+                  onChange={(e) => {
+                    if (e.target.value !== 'Khac') {
+                      setConfig({ ...config, bankId: e.target.value });
+                    }
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+                >
+                  <option value="Vietinbank">Vietinbank (Ngân hàng TMCP Công Thương)</option>
+                  <option value="Vietcombank">Vietcombank (Ngân hàng Ngoại Thương)</option>
+                  <option value="MB">MBBank (Ngân hàng Quân Đội)</option>
+                  <option value="Techcombank">Techcombank (Ngân hàng Kỹ Thương)</option>
+                  <option value="BIDV">BIDV (Ngân hàng Đầu tư và Phát triển)</option>
+                  <option value="Agribank">Agribank (Ngân hàng Nông nghiệp)</option>
+                  <option value="ACB">ACB (Ngân hàng Á Châu)</option>
+                  <option value="VPBank">VPBank (Ngân hàng Thịnh Vượng)</option>
+                  <option value="TPBank">TPBank (Ngân hàng Tiên Phong)</option>
+                  <option value="Sacombank">Sacombank (Ngân hàng Sài Gòn Thương Tín)</option>
+                  <option value="VIB">VIB (Ngân hàng Quốc Tế)</option>
+                  <option value="HDBank">HDBank (Ngân hàng Phát triển TP.HCM)</option>
+                  <option value="LPBank">LPBank (Lộc Phát Việt Nam)</option>
+                  <option value="MSB">MSB (Ngân hàng Hàng Hải)</option>
+                  <option value="SHB">SHB (Ngân hàng Sài Gòn - Hà Nội)</option>
+                  <option value="SeABank">SeABank (Ngân hàng Đông Nam Á)</option>
+                  <option value="OCB">OCB (Ngân hàng Phương Đông)</option>
+                  <option value="Khac">Tự nhập mã / tên ngân hàng khác...</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="Nhập mã/tên ngân hàng (VD: Vietinbank, MB...)"
+                  value={config.bankId || ''}
+                  onChange={(e) => setConfig({ ...config, bankId: e.target.value })}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Số tài khoản ngân hàng (bankAccountNo)</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: 104887594225 hoặc 0988948882"
+                  value={config.bankAccountNo || ''}
+                  onChange={(e) => setConfig({ ...config, bankAccountNo: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-mono font-bold text-indigo-700 text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tên chủ tài khoản (bankAccountName)</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: NGUYEN VAN HA (Viết hoa không dấu)"
+                  value={config.bankAccountName || ''}
+                  onChange={(e) => setConfig({ ...config, bankAccountName: e.target.value.toUpperCase() })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
             </div>
           </div>
         </div>
