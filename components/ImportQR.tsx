@@ -37,9 +37,9 @@ interface QRExcelItem {
 }
 
 const ImportQR: React.FC<ImportQRProps> = ({ data, onUpdate }) => {
-  // Sửa lần 2: Tự động xác thực nếu đang ở chế độ Dùng thử hoặc tài khoản VIP
+  // Sửa lần 2: Tự động xác thực nếu đã xác thực trước đó, hoặc ở chế độ Dùng thử hoặc tài khoản VIP
   const [isAuthorizedV, setIsAuthorizedV] = useState(() => {
-    return data.enableCopyrightCheck === false || data.licenseStatus === 'vip';
+    return localStorage.getItem('is_authorized_v') === 'true' || data.enableCopyrightCheck === false || data.licenseStatus === 'vip';
   });
   const [isChecking, setIsChecking] = useState(false);
   const [password, setPassword] = useState('');
@@ -93,6 +93,7 @@ const ImportQR: React.FC<ImportQRProps> = ({ data, onUpdate }) => {
       const pwdC2 = String(data.passwordC2 || "").toLowerCase().trim();
       if (key === "16868688" || (pwdC2 && key === pwdC2)) {        
         setIsAuthorizedV(true);
+        localStorage.setItem('is_authorized_v', 'true');
         alert('Xác thực thành công!');       
       } else {
         alert('Mật khẩu không đúng. Vui lòng nhập mật khẩu C2 hoặc 16868688.');
