@@ -413,23 +413,30 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
         
         {/* Khối Biểu phí */}
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-          <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
             <DollarSign className="text-emerald-500" /> Biểu phí học tập theo Lớp
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {["Lop9", "Lop10", "Lop11", "Lop12"].map((name) => {
-              const feeObj = config.fees.find(f => f.className === name) || { className: name, fee: 0 };
+          <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+            Mức học phí (đ/buổi) sẽ được tự động đồng bộ sang cột B trong sheet <code className="bg-slate-100 text-indigo-600 px-1.5 py-0.5 rounded font-mono font-bold">hocphi</code> của Google Sheet cá nhân.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+            {Array.from(new Set([
+              "Lop1", "Lop2", "Lop3", "Lop4", "Lop5", "Lop6", "Lop7", "Lop8", "Lop9", "Lop10", "Lop11", "Lop12",
+              ...(config.fees || []).map(f => f.className),
+              ...Object.keys(config.sheets || {})
+            ])).filter(name => name && !['ThuTien', 'GVCN', 'banquyen', 'hocphi', 'WebhookLogs', 'THHT'].includes(name)).map((name) => {
+              const feeObj = (config.fees || []).find(f => f.className === name) || { className: name, fee: 60000 };
               return (
-                <div key={name} className="flex flex-col p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                  <span className="font-extrabold text-slate-700 text-sm mb-2">{name}</span>
+                <div key={name} className="flex flex-col p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                  <span className="font-extrabold text-slate-700 text-xs mb-1.5">{name}</span>
                   <div className="flex items-center gap-2">
                     <input 
                       type="number" 
                       value={feeObj.fee}
                       onChange={(e) => updateFee(name, Number(e.target.value))}
-                      className="w-full px-3 py-2 text-right rounded-xl border border-slate-200 font-bold text-indigo-600 focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+                      className="w-full px-3 py-1.5 text-right rounded-xl border border-slate-200 font-bold text-indigo-600 focus:ring-2 focus:ring-indigo-500 text-xs bg-white"
                     />
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">đ/b</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0">đ/b</span>
                   </div>
                 </div>
               );
