@@ -4,6 +4,7 @@ import { CheckSquare, Lock, Search, CheckCircle2, XCircle, CloudUpload, Loader2,
 import { AppData } from '../types';
 import { calculateTotal, syncAttendanceToSheet } from '../services/storage';
 import { verifyAdminPassword } from './verifyadmin';
+//import { allcheck } from '../src/utils';
 
 interface AttendanceSectionProps {
   data: AppData;
