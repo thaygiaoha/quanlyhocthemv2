@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, CheckCircle2, AlertCircle, Trash2, Loader2, Lock, QrCode, Copy, Download, X, CreditCard } from 'lucide-react';
 import { AppData } from '../types';
 import { allcheck } from '../src/utils/mathHelpers';
+import { safeName } from './verifyadmin';
 
 interface PaymentHistoryProps {
   data: AppData;
@@ -126,7 +127,8 @@ const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data, onUpdate, 
     const bankId = data.bankId || 'Vietinbank';
     const bankAccountNo = data.bankAccountNo || '104887594225';
     const bankAccountName = data.bankAccountName || 'NGUYEN VAN HA';
-    const content = `SEVQR ${student.code || student.stt} L${lan} ${student.name} nop tien `;
+    const sname = safeName(student.name || "");
+    const content = `SEVQR ${student.code || student.stt} L${lan} ${sname} nop tien `;
 
     const qrUrl = `https://img.vietqr.io/image/${bankId}-${bankAccountNo}-compact2.png?amount=${cleanAmount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(bankAccountName)}`;
 
