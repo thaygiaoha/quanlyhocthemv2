@@ -1,4 +1,4 @@
-export const URL_ADMIN = import.meta.env?.VITE_API_URL_ADMIN || "https://script.google.com/macros/s/AKfycbwlglx696Wr0BCj8SMAvwh1hlfFg66uemInbxI2W0TdE96wY67eZx_AAxxD5RJnl04NXg/exec"; 
+export const URL_ADMIN = import.meta.env?.VITE_API_URL_ADMIN; 
 
 // 2107them / 2207sua3 / 2307sua1: Xác thực tài khoản giáo viên qua sheet banquyen (thử cả sheetLink và URL_ADMIN)
 export const verifyBanquyen = async (
