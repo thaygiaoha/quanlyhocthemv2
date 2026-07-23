@@ -371,7 +371,7 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
                 Link Web App cá nhân (data.sheetLink)
               </label>
               <p className="text-[11px] text-slate-400 mb-2 leading-relaxed">
-                Nơi lưu/đọc danh sách học sinh, điểm danh, xóa/thêm học sinh, tính học phí và tạo mã QR. Link này sẽ tự động ghi nhận vào cột G của Google Sheet Admin.
+                Bắt buộc phải có nhé.Nơi lưu/đọc danh sách học sinh, điểm danh, xóa/thêm học sinh, tính học phí và tạo mã QR.
               </p>
               <div className="flex flex-wrap sm:flex-nowrap gap-2">
                 <input 
