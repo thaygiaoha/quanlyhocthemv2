@@ -24,18 +24,23 @@ const App: React.FC = () => {
   // 1. Khởi tạo dữ liệu: Ưu tiên lấy từ LocalStorage
   const [data, setData] = useState<AppData>(() => {
     const saved = localStorage.getItem('hocphi_data');
+    let parsed: any = null;
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
+        parsed = JSON.parse(saved);
         if (!parsed.sheetLink || parsed.sheetLink.includes('AKfycbxU1gFzMDIzYbWxAh70658gBw6czUAhyhud7VqbZWMD1OYlZfqDR5M7W7wfxz831e3gXA')) {
           parsed.sheetLink = 'https://script.google.com/macros/s/AKfycbwlglx696Wr0BCj8SMAvwh1hlfFg66uemInbxI2W0TdE96wY67eZx_AAxxD5RJnl04NXg/exec';
         }
-        return parsed;
       } catch (e) {
         console.error("Lỗi dữ liệu LocalStorage:", e);
       }
     }
-    return getAppData(); 
+    const initial: AppData = parsed || getAppData();
+    const savedIdgv = localStorage.getItem('saved_idgv');
+    if (savedIdgv && !initial.idgv) {
+      initial.idgv = savedIdgv;
+    }
+    return initial;
   });
 
   // 2307them2: Kiểm tra trạng thái đã kết nối Link Script
@@ -48,12 +53,13 @@ const App: React.FC = () => {
     }
   }, [view, hasSheetLink]);
 
-  // 2. Hàm kéo dữ liệu từ tất cả các Sheet về App
+  // 2. Hàm kéo dữ liệu từ tất cả các Sheet về App (tự động đính kèm IDGV đã lưu)
   const refreshDataFromCloud = async (link: string, showAlert: boolean = false) => {
     if (!link) return;
     setIsRefreshing(true);
     try {
-      const url = data.idgv ? `${link}${link.indexOf('?') === -1 ? '?' : '&'}idgv=${encodeURIComponent(data.idgv)}` : link;
+      const activeIdgv = data.idgv || localStorage.getItem('saved_idgv') || '';
+      const url = activeIdgv ? `${link}${link.indexOf('?') === -1 ? '?' : '&'}idgv=${encodeURIComponent(activeIdgv)}` : link;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -61,7 +67,7 @@ const App: React.FC = () => {
       const cloudData = await response.json();
       
       if (cloudData && cloudData.sheets) {
-        const updatedData = { 
+        const updatedData: AppData = { 
           ...data, 
           sheets: cloudData.sheets, 
           passwordC2: cloudData.password || data.passwordC2,
@@ -70,10 +76,14 @@ const App: React.FC = () => {
           mon: cloudData.mon !== undefined ? cloudData.mon : data.mon,
           idmon: cloudData.idmon !== undefined ? cloudData.idmon : data.idmon,
           linkScript: cloudData.linkScript !== undefined ? cloudData.linkScript : data.linkScript,
+          idgv: activeIdgv || cloudData.idgv || data.idgv || '',
           sheetLink: link 
         };
         setData(updatedData);
         localStorage.setItem('hocphi_data', JSON.stringify(updatedData));
+        if (updatedData.idgv) {
+          localStorage.setItem('saved_idgv', updatedData.idgv);
+        }
         
         if (showAlert) {
           alert("Đồng bộ thành công! Đã tải dữ liệu & kiểm tra bản quyền mới nhất từ Google Sheets.");
@@ -93,11 +103,14 @@ const App: React.FC = () => {
 
   // 3. Hàm cập nhật dữ liệu khi Settings hoặc Attendance thay đổi
   const handleUpdateData = async (newData: AppData) => {
+    if (newData.idgv) {
+      localStorage.setItem('saved_idgv', newData.idgv);
+    }
     if (newData.sheetLink && newData.sheetLink !== data.sheetLink) {
       setData(newData);
       localStorage.setItem('hocphi_data', JSON.stringify(newData));
       if (window.confirm("Phát hiện Link Script mới. Tải dữ liệu từ Google Sheets về máy này?")) {
-        await refreshDataFromCloud(newData.sheetLink, true);
+        await refreshDataFromCloud(newData.sheetLink, false);
       }
     } else {
       setData(newData);
@@ -108,14 +121,17 @@ const App: React.FC = () => {
   // 4. Tự động lưu dữ liệu mỗi khi state data thay đổi
   useEffect(() => {
     saveAppData(data);
+    if (data.idgv) {
+      localStorage.setItem('saved_idgv', data.idgv);
+    }
   }, [data]);
 
-  // 5. Tự động đồng bộ NGẦM khi vừa mở App
+  // 5. Tự động đồng bộ NGẦM khi vừa mở App & Tự động đồng bộ NGẦM mỗi khi chuyển giao diện (views)
   useEffect(() => {
     if (data.sheetLink) {
       refreshDataFromCloud(data.sheetLink, false);
     }
-  }, []);  
+  }, [view]);  
 
   const renderContent = () => {
     switch (view) {
@@ -123,7 +139,7 @@ const App: React.FC = () => {
         return <Dashboard 
                  data={data} 
                  onUpdate={handleUpdateData} 
-                 onRefreshData={() => refreshDataFromCloud(data.sheetLink, true)}
+                 onRefreshData={() => refreshDataFromCloud(data.sheetLink, false)}
                  />;
       case ViewMode.IMPORT:
         return (
@@ -145,7 +161,7 @@ const App: React.FC = () => {
           <AttendanceSection 
             data={data} 
             onUpdate={handleUpdateData}       
-            onRefreshData={() => refreshDataFromCloud(data.sheetLink, true)}
+            onRefreshData={() => refreshDataFromCloud(data.sheetLink, false)}
           />
         );
       case ViewMode.SETTINGS:
@@ -155,7 +171,7 @@ const App: React.FC = () => {
           <PaymentHistorySection 
             data={data} 
             onUpdate={handleUpdateData} 
-            onRefreshData={() => refreshDataFromCloud(data.sheetLink, true)}
+            onRefreshData={() => refreshDataFromCloud(data.sheetLink, false)}
           />
         );
       case ViewMode.QRCODE:
@@ -177,7 +193,7 @@ const App: React.FC = () => {
           <GVCNSection 
             data={data} 
             onUpdate={handleUpdateData} 
-            onRefreshData={() => refreshDataFromCloud(data.sheetLink, true)}
+            onRefreshData={() => refreshDataFromCloud(data.sheetLink, false)}
           />
         );
       case ViewMode.GEMINI_AI:
@@ -188,15 +204,17 @@ const App: React.FC = () => {
   };
 
   const handleStudentLookupIDGV = async () => {
-    const inputIdgv = prompt("TRA CỨU DỮ LIỆU LỚP HỌC THEO IDGV (Số điện thoại Thầy/Cô):\nNhập IDGV Giáo viên:", data.idgv || "");
+    const savedIdgv = data.idgv || localStorage.getItem('saved_idgv') || "";
+    const inputIdgv = prompt("TRA CỨU DỮ LIỆU LỚP HỌC THEO IDGV (Số điện thoại Thầy/Cô):\nNhập IDGV Giáo viên:", savedIdgv);
     if (!inputIdgv || !inputIdgv.trim()) return;
 
     try {
-      const res = await lookupTeacherByIDGV(inputIdgv.trim());
+      const targetIdgv = inputIdgv.trim();
+      const res = await lookupTeacherByIDGV(targetIdgv);
       if (res.success && res.linkScript) {
         const updatedData: AppData = {
           ...data,
-          idgv: res.idgv || inputIdgv.trim(),
+          idgv: res.idgv || targetIdgv,
           fullname: res.fullname || data.fullname,
           mon: res.mon || data.mon,
           idmon: res.idmon || data.idmon,
@@ -204,11 +222,12 @@ const App: React.FC = () => {
           linkScript: res.linkScript,
           sheetLink: res.linkScript
         };
+        localStorage.setItem('saved_idgv', res.idgv || targetIdgv);
         handleUpdateData(updatedData);
-        await refreshDataFromCloud(res.linkScript, true);
-        alert(`Thành công! Đã kết nối dữ liệu Lớp học của Giáo viên: ${res.fullname || inputIdgv} (${res.mon || 'Môn học'})!`);
+        await refreshDataFromCloud(res.linkScript, false);
+        alert(`Thành công! Đã kết nối dữ liệu Lớp học của Giáo viên: ${res.fullname || targetIdgv} (${res.mon || 'Môn học'})!`);
       } else {
-        alert(res.message || `Không tìm thấy IDGV: ${inputIdgv}`);
+        alert(res.message || `Không tìm thấy IDGV: ${targetIdgv}`);
       }
     } catch (err) {
       console.error(err);
