@@ -22,7 +22,7 @@ import {
   FileText
 } from 'lucide-react';
 import { AppData, Student } from '../types';
-import { verifyAdminPassword } from './verifyadmin';
+import { verifyAdminPassword, safeName } from './verifyadmin';
 
 interface QRCalculatorProps {
   data: AppData;
