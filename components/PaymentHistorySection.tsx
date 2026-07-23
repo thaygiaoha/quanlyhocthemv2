@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, History, CheckCircle2, AlertCircle, Trash2, Loader2, Lock } from 'lucide-react';
+import { Search, CheckCircle2, AlertCircle, Trash2, Loader2, Lock } from 'lucide-react';
 import { AppData } from '../types';
 import { allcheck } from '../src/utils/mathHelpers';
 
@@ -552,4 +552,4 @@ if (!isAuthorizedV) {
 };
 
 
-export default PaymentHistorySection;
+export default PaymentSection;
