@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { Search, CheckCircle2, AlertCircle, Trash2, Loader2, Lock, QrCode, Copy, Download, X } from 'lucide-react';
+import { Search, CheckCircle2, AlertCircle, Trash2, Loader2, Lock, QrCode, Copy, Download, X, CreditCard } from 'lucide-react';
 import { AppData } from '../types';
 import { allcheck } from '../src/utils/mathHelpers';
 
 interface PaymentHistoryProps {
   data: AppData;
   onUpdate: (data: AppData) => void;
-  //onRefreshData: () => Promise<void>; // Hàm tải lại dữ liệu từ component cha sau khi lưu thành công
+  onRefreshData?: () => Promise<void>; // Hàm tải lại dữ liệu từ component cha sau khi lưu thành công
 }
 
-const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data }) => {
+const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data, onUpdate, onRefreshData }) => {
   const [selectedClass, setSelectedClass] = useState<string>('Lop12');
   const [searchTerm, setSearchTerm] = useState('');
   const [isPayMode, setIsPayMode] = useState(false);  
@@ -73,22 +73,30 @@ const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data }) => {
   // 2. Trích xuất dữ liệu từ sheet ThuTien đã nạp trong data
   const rawThuTien = data.sheets['ThuTien']?.students || []; 
 
-  // Lọc riêng bản ghi của lớp hiện tại
+  // Lọc riêng bản ghi của lớp hiện tại (hoặc khớp với học sinh trong lớp)
   const classNumber = selectedClass.replace('Lop', '');
   const classRecords = rawThuTien.filter((r: any) => {
-    if (!r || !r.lop) return false;
-    const match = String(r.lop).match(/^\d+/);
-    const extractedClassNum = match ? match[0] : '';
-    return String(extractedClassNum) === String(classNumber);
+    if (!r) return false;
+    if (r.lop) {
+      const match = String(r.lop).match(/^\d+/);
+      const extractedClassNum = match ? match[0] : String(r.lop);
+      if (String(extractedClassNum) === String(classNumber)) return true;
+    }
+    // Nếu r.lop không ghi rõ, đối chiếu xem học sinh có thuộc lớp này không
+    return currentStudents.some((s: any) => 
+      (s.code && r.code && allcheck(s.code, r.code)) || 
+      (s.name && r.name && allcheck(s.name, r.name))
+    );
   });
 
-  // 3. Tìm số Lần nộp (L) lớn nhất (kết hợp cả từ Sheet ThuTien và cột S-AI lịch sử)
+  // 3. Tìm số Lần nộp (L) lớn nhất từ dữ liệu bên phải cột S-AI (historyBlocks) hoặc bản ghi ThuTien
   const maxLanFromRecords = classRecords.reduce((max: number, r: any) => {
     const num = parseInt(String(r.lanNop).replace('L', ''), 10);
     return !isNaN(num) && num > max ? num : max;
-  }, 1);
+  }, 0);
 
   const maxLanFromBlocks = historyBlocks.length;
+  // Đảm bảo hiển thị ít nhất Lần 1 để học sinh luôn có bảng nhật ký và nút nộp học phí
   const maxLanNop = Math.max(maxLanFromRecords, maxLanFromBlocks, 1);
 
   // Tạo mảng tuần tự các đợt nộp: [1, 2, 3, ...]
@@ -219,13 +227,16 @@ const visibleLans = currentLans.slice(
         })
       });     
       const resJson = await response.json();
-      if (resJson.status === 200) {
+      if (resJson.status === 200 || resJson.success) {
         alert(resJson.message || 'Cập nhật học phí thành công!');
         setSelectedStudent(null);
-        setInputAmount(sotien);
+        setInputAmount('600000');
         setAdminPassword('');        
+        if (onRefreshData) {
+          await onRefreshData();
+        }
       } else {
-        alert('Lỗi: ' + resJson.message);
+        alert('Lỗi: ' + (resJson.message || 'Cập nhật thất bại'));
       }
     } catch (error) {
       console.error(error);
@@ -264,6 +275,9 @@ const visibleLans = currentLans.slice(
         });
         const result = await response.json();
         alert(result.message);  
+        if (onRefreshData) {
+          await onRefreshData();
+        }
              
       } else {
         alert("Không tìm thấy liên kết Google Sheets!");
@@ -522,9 +536,22 @@ if (!isAuthorizedV) {
           </div>
         </div>
       ) : (
-        /* CHẾ ĐỘ XEM 2: BẢNG NHẬT KÝ NỘP TIỀN GỐC */
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="overflow-x-auto">
+        /* CHẾ ĐỘ XEM 2: BẢNG NHẬT KÝ NỘP TIỀN GỐC (KHI ĐÃ CÓ DỮ LIỆU BÊN PHẢI HOẶC MẶC ĐỊNH) */
+        <div className="space-y-3">
+          {/* Thông báo nếu chưa có dữ liệu đợt thu từ cột S-AI trên Google Sheet */}
+          {historyBlocks.length === 0 && (
+            <div className="bg-amber-50/90 border border-amber-200 text-amber-800 rounded-xl p-3 px-4 text-xs font-semibold flex items-center justify-between gap-2 shadow-sm">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={16} className="text-amber-600 shrink-0" />
+                <span>
+                  Chưa có dữ liệu đợt thu ở cột S đến AI trên Google Sheet. Đang hiển thị Lần 1 mặc định để Phụ huynh/Học sinh có thể xem và nộp học phí.
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wider">
@@ -552,8 +579,11 @@ if (!isAuthorizedV) {
                         
                         {visibleLans.map(lan => {
                           const record = classRecords.find((r: any) => {
-                            if (!r || !r.code) return false;                            
-                            return r.lanNop === `L${lan}` && allcheck(r.code, student.code);
+                            if (!r) return false;
+                            const matchLan = r.lanNop === `L${lan}` || r.lanNop === `L0${lan}` || r.lanNop === String(lan) || allcheck(r.lanNop, `L${lan}`);
+                            const matchStudent = (r.code && student.code && allcheck(r.code, student.code)) ||
+                                                 (r.name && student.name && allcheck(r.name, student.name));
+                            return matchLan && matchStudent;
                           });
 
                           // Lấy số tiền từ cột AI trong khối lịch sử S-AI (đợt nộp tương ứng)
@@ -598,6 +628,7 @@ if (!isAuthorizedV) {
               </tbody>
             </table>
           </div>
+        </div>
         </div>
       )}
 
