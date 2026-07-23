@@ -16,7 +16,9 @@ const ListSection: React.FC<ListSectionProps> = ({ data }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Trạng thái mở modal xóa học sinh
   const [isChecking, setIsChecking] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [isAuthorizedV, setIsAuthorizedV] = useState(false);
+  const [isAuthorizedV, setIsAuthorizedV] = useState(() => {
+    return localStorage.getItem('is_authorized_v') === 'true' || data.enableCopyrightCheck === false || data.licenseStatus === 'vip';
+  });
   const [password, setPassword] = useState('');
 
   const currentStudents = data.sheets[selectedClass]?.students || [];
@@ -28,31 +30,31 @@ const ListSection: React.FC<ListSectionProps> = ({ data }) => {
     const matchSchool = s.school && String(s.school).toLowerCase().includes(searchLower);
     return matchName || matchCode || matchClass || matchSchool;
   });
-// Xác minh admin (Sửa lần 2)
-   const handleAuthV = async () => {
-  if (!password.trim()) {
-    alert('Vui lòng nhập mật khẩu!');
-    return;
-  }
-  
-  setIsChecking(true);
-  try {
-    const key = String(password).toLowerCase().trim();
-    if (key === "16868688") {       
-      setIsAuthorizedV(true);
-      alert('Xác thực thành công!');       
-      // Thêm logic chuyển hướng hoặc set login state của bạn ở đây (nếu có)
-    } else {
-      alert('Sai mật khẩu rồi nhé bạn! (^__^)');
-    }   
-  } catch (error) {
-    console.error("Lỗi xác thực:", error);
-    alert('Đã xảy ra lỗi trong quá trình xác thực.');
-  } finally {
-    // block finally này luôn chạy, giúp đảm bảo tắt trạng thái loading bất kể đúng/sai/lỗi
-    setIsChecking(false); 
-  }
-};
+  // Xác minh admin (Sửa lần 2)
+  const handleAuthV = async () => {
+    if (!password.trim()) {
+      alert('Vui lòng nhập mật khẩu!');
+      return;
+    }
+    
+    setIsChecking(true);
+    try {
+      const key = String(password).toLowerCase().trim();
+      const pwdC2 = String(data.passwordC2 || "").toLowerCase().trim();
+      if (key === "16868688" || (pwdC2 && key === pwdC2)) {       
+        setIsAuthorizedV(true);
+        localStorage.setItem('is_authorized_v', 'true');
+        alert('Xác thực thành công!');       
+      } else {
+        alert('Sai mật khẩu rồi nhé bạn! (^__^)');
+      }   
+    } catch (error) {
+      console.error("Lỗi xác thực:", error);
+      alert('Đã xảy ra lỗi trong quá trình xác thực.');
+    } finally {
+      setIsChecking(false); 
+    }
+  };
 
 
   const handleResetClass = async () => {
