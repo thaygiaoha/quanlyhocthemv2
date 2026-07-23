@@ -17,6 +17,9 @@ export interface ClassSheet {
   students: Student[];
   studentCount: number;
   headers?: string[];
+  historyBlocks?: any[];
+  historyCount?: number;
+  maxLan?: number; // 2307them7: Số lần đánh dấu lưu bên cột R của sheet(Lop...)
 }
 
 export interface FeeConfig {
