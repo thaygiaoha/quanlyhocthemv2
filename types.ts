@@ -32,7 +32,7 @@ export interface AppData {
   bankId?: string;
   bankAccountNo?: string;
   bankAccountName?: string;
-  // 2107them: Thông tin bản quyền học tập
+  // Thông tin bản quyền học tập
   idgv?: string;
   fullname?: string;
   mon?: string;
@@ -40,7 +40,6 @@ export interface AppData {
   licenseStatus?: string; // "vip" hoặc các giá trị khác
   linkScript?: string;
   enableCopyrightCheck?: boolean; // Bật/tắt kiểm tra bản quyền toàn cục
-  // 2207them3: Bổ sung các cột bản quyền mới
   level?: string;
   hetHan?: string;
   checkBanquyen?: string;
@@ -63,5 +62,5 @@ export enum ViewMode {
   PAYMENT_HISTORY = 'payment',
   QRCODE = 'qrcode',
   IMPORT_QR = 'import_qr',
-  GVCN = 'gvcn' // 1807Them2
+  GVCN = 'gvcn'
 }
