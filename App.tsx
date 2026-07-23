@@ -273,7 +273,7 @@ const App: React.FC = () => {
                title="Nhập IDGV của Giáo viên để Học sinh/Phụ huynh xem dữ liệu lớp học tương ứng"
              >
                <Search size={14} className="text-emerald-600" />
-               <span>Tra cứu IDGV HS/PH</span>
+               <span>Tra cứu số ĐT GV</span>
              </button>
 
              {/* NÚT REFRESH CHỦ ĐỘNG TRÊN HEADER */}
