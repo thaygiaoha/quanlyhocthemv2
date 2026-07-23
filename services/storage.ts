@@ -2,7 +2,7 @@
 import { AppData, Student, FeeConfig } from '../types';
 
 const STORAGE_KEY = 'quan_ly_hoc_them_data';
-import { URL_ADMIN } from '../verifyadmin';
+import { URL_ADMIN } from '../components/verifyadmin';
 const MY_SHEET_LINK = URL_ADMIN;
 
 const DEFAULT_DATA: AppData = {
