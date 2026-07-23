@@ -70,24 +70,37 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
     }
   };
 
+  // 2307sua1: Cập nhật toàn hệ thống và tự động ghi nhận Link Script vào cột G (Sheet banquyen)
   const handleSaveAll = async () => {
-    onUpdate(config);
+    const updatedConfig = {
+      ...config,
+      idgv: idgv || config.idgv || ''
+    };
+    setConfig(updatedConfig);
+    onUpdate(updatedConfig);
     
-    if (config.sheetLink && window.confirm("Xác nhận cập nhật cấu hình và đồng bộ lên Google Sheets?")) {
+    if (updatedConfig.sheetLink && window.confirm("Xác nhận cập nhật cấu hình và đồng bộ lên Google Sheets?")) {
         setSyncing(true);
         try {
             // 1. Đồng bộ cấu hình học phí & mật khẩu C2 lên Google Sheets
-            await syncSettingsToSheet(config.sheetLink, config.passwordC2, config.fees);
+            await syncSettingsToSheet(updatedConfig.sheetLink, updatedConfig.passwordC2, updatedConfig.fees);
             
-            // 2207sua3: Ghi Link Script (cột G) của Giáo viên vào sheet banquyen khi GV đồng bộ
-            const linkToSave = (config.linkScript && config.linkScript.trim()) ? config.linkScript.trim() : config.sheetLink;
-            if (linkToSave) {
-              await updateLinkScriptOnSheet(config.sheetLink, idgv, password, linkToSave);
+            // 2307them1: Ghi Link Script (cột G) của Giáo viên vào sheet banquyen khi GV đồng bộ
+            const targetIdgv = idgv || updatedConfig.idgv || '';
+            const linkToSave = (updatedConfig.linkScript && updatedConfig.linkScript.trim()) ? updatedConfig.linkScript.trim() : updatedConfig.sheetLink;
+            
+            let scriptNote = '';
+            if (linkToSave && targetIdgv) {
+              // 2307sua1: Gọi API cập nhật link script lên cột G của sheet banquyen
+              const resScript = await updateLinkScriptOnSheet(updatedConfig.sheetLink, targetIdgv, password, linkToSave);
+              if (resScript && resScript.success) {
+                scriptNote = '\n✓ Đã tự động ghi nhận Link Script vào cột G (Sheet banquyen) thành công!';
+              }
             }
             
-            alert('Đồng bộ thành công cấu hình hệ thống & Link Script lên Google Sheets!');
+            alert(`Đồng bộ thành công cấu hình hệ thống & Link Script lên Google Sheets!${scriptNote}`);
         } catch (err) {
-            console.error(err);
+            console.error("2307sua1: Lỗi khi lưu cấu hình:", err);
             alert('Đồng bộ thất bại! Bạn hãy kiểm tra lại kết nối mạng nhé.');
         } finally {
             setSyncing(false);
