@@ -155,6 +155,7 @@ const App: React.FC = () => {
           <PaymentHistorySection 
             data={data} 
             onUpdate={handleUpdateData} 
+            onRefreshData={() => refreshDataFromCloud(data.sheetLink, true)}
           />
         );
       case ViewMode.QRCODE:
