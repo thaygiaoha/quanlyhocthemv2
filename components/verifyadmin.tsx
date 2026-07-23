@@ -1,6 +1,6 @@
-export const URL_ADMIN = import.meta.env?.VITE_API_URL_ADMIN; 
+export const URL_ADMIN = import.meta.env?.VITE_API_URL_ADMIN || "https://script.google.com/macros/s/AKfycbwlglx696Wr0BCj8SMAvwh1hlfFg66uemInbxI2W0TdE96wY67eZx_AAxxD5RJnl04NXg/exec"; 
 
-// 2107them / 2207sua3 / 2307sua1: Xác thực tài khoản giáo viên qua sheet banquyen (thử cả sheetLink và URL_ADMIN)
+// 2307sua2: Xác thực tài khoản giáo viên qua sheet banquyen trên Google Sheet Admin (URL_ADMIN)
 export const verifyBanquyen = async (
   sheetLink: string, 
   idgv: string,
@@ -14,15 +14,15 @@ export const verifyBanquyen = async (
   idmon?: string; 
   licenseStatus?: string; 
   linkScript?: string; 
-  level?: string; // 2207them3
-  hetHan?: string; // 2207them3
-  checkBanquyen?: string; // 2207them3
+  level?: string; 
+  hetHan?: string; 
+  checkBanquyen?: string; 
 }> => {
   if (!idgv.trim()) return { success: false, message: "Số điện thoại IDGV không được để trống!" };
   if (!password.trim()) return { success: false, message: "Mật khẩu không được để trống!" };
   
-  // 2307them1: Danh sách các URL thử xác thực
-  const targetUrls = Array.from(new Set([sheetLink, URL_ADMIN].filter(Boolean)));
+  // 2307them2: Ưu tiên gửi yêu cầu xác thực tới Google Sheet Admin (URL_ADMIN) để lấy dữ liệu bản quyền và link script
+  const targetUrls = Array.from(new Set([URL_ADMIN, sheetLink].filter(Boolean)));
   let lastResult = { success: false, message: "Không thể kết nối đến máy chủ xác thực!" };
 
   for (const url of targetUrls) {
@@ -67,23 +67,23 @@ export const verifyBanquyen = async (
       }
     } catch (err) {
       clearTimeout(timeoutId);
-      console.error("2307sua1: Lỗi xác thực bản quyền tới", url, err);
+      console.error("2307sua2: Lỗi xác thực bản quyền tới", url, err);
     }
   }
 
   return lastResult;
 };
 
-// 2107them / 2307sua1: Cập nhật link script cho giáo viên vào cột G
+// 2307sua2: Cập nhật link script cho giáo viên trực tiếp vào cột G sheet banquyen trên Google Sheet của Admin (URL_ADMIN)
 export const updateLinkScriptOnSheet = async (
   sheetLink: string,
   idgv: string,
   password: string,
   newLinkScript: string
 ): Promise<{ success: boolean; message: string }> => {
-  // 2307them1: Thử đồng bộ cột G lên cả URL_ADMIN và sheetLink của giáo viên
+  // 2307them2: Luôn gửi yêu cầu cập nhật Link Script trực tiếp về URL_ADMIN để Admin quản lý tập trung
   const targetUrls = Array.from(new Set([URL_ADMIN, sheetLink].filter(Boolean)));
-  let lastResult = { success: false, message: "Cập nhật link script thất bại!" };
+  let lastResult = { success: false, message: "Cập nhật Link Script thất bại!" };
 
   for (const url of targetUrls) {
     const controller = new AbortController();
@@ -108,13 +108,14 @@ export const updateLinkScriptOnSheet = async (
         if (result && result.success) {
           lastResult = {
             success: true,
-            message: result.message || "Cập nhật Link Script vào cột G thành công!"
+            message: result.message || "Cập nhật Link Script vào cột G (Sheet Admin) thành công!"
           };
+          break; // Đã cập nhật thành công vào Admin Sheet
         }
       }
     } catch (err) {
       clearTimeout(timeoutId);
-      console.error("2307sua1: Lỗi cập nhật link script tới", url, err);
+      console.error("2307sua2: Lỗi cập nhật link script tới", url, err);
     }
   }
 
