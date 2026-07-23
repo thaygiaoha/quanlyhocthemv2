@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckSquare, Lock, Save, Search, CheckCircle2, XCircle, CloudUpload, Loader2, Calendar, Eye, CalendarCheck2, RefreshCw } from 'lucide-react'; // 1807Sua
+import { CheckSquare, Lock, Search, CheckCircle2, XCircle, CloudUpload, Loader2, Calendar, Eye, RefreshCw } from 'lucide-react'; // 1807Sua
 //import { CheckSquare, Lock, Save, Search, CheckCircle2, XCircle, CloudUpload, Loader2, Calendar } from 'lucide-react';
 import { AppData } from '../types';
 import { calculateTotal, syncAttendanceToSheet } from '../services/storage';
