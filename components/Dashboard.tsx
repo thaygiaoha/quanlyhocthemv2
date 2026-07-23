@@ -92,6 +92,20 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
   isExternal: true,
   link: "https://smarteduv2.vercel.app?mode=register"
 },
+     {
+      title: "Tạo QR thu học phí tự động",
+      description: "Giải pháp chuyển khoản rảnh tay: Tự động quét thông tin từ Google Sheets hoặc file Excel để sinh mã QR VietQR kèm chính xác số tiền và cú pháp định danh của từng học sinh.",
+      features: ["Tích hợp VietQR chuẩn", "Tạo QR từ Excel", "Tạo QR từ Google sheet", "Bảo mật tài khoản", "Cần tích hợp VietQR hoặc nên dùng SePay(Dễ làm, không cần link)"],
+      icon: QrCode,
+      color: "from-pink-500 via-rose-500 to-amber-500",
+      shadow: "shadow-rose-100",
+      badge: "Tiện ích Pro",
+      customLinks: [
+        { label: "Tích hợp VietQR", url: "https://accounts.casso.vn/signup?returnTo=dYFr_6rDrHI99o0D0cq6Y" }, // Thầy thay link 1 ở đây
+        { label: "Tích hợp SePay", url: "https://sepay.vn?utm_source=INV&utm_medium=RFTRA&utm_campaign=E611D6B0" },  // Thầy thay link 2 ở đây
+        { label: "Tải code GAS", url: "https://docs.google.com/spreadsheets/d/1dX-yLVwsTeCDZZhII4xam_UQ4c6GipFYP7mQqHMaNrE/edit?usp=sharing" }  // Thầy thay link 2 ở đây
+      ]
+    },
 {
   title: "Kiểm tra bản quyền",
   description: "Xác minh trạng thái bản quyền phần mềm để đảm bảo hệ thống hoạt động ổn định.",
@@ -132,20 +146,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
       color: "from-blue-500 to-indigo-600",
       shadow: "shadow-blue-100",
       badge: "Phổ biến"
-    },
-    {
-      title: "Tạo QR thu học phí tự động",
-      description: "Giải pháp chuyển khoản rảnh tay: Tự động quét thông tin từ Google Sheets hoặc file Excel để sinh mã QR VietQR kèm chính xác số tiền và cú pháp định danh của từng học sinh.",
-      features: ["Tích hợp VietQR chuẩn", "Tạo QR từ Excel", "Tạo QR từ Google sheet", "Bảo mật tài khoản", "Cần tích hợp VietQR hoặc nên dùng SePay(Dễ làm, không cần code)"],
-      icon: QrCode,
-      color: "from-pink-500 via-rose-500 to-amber-500",
-      shadow: "shadow-rose-100",
-      badge: "Tiện ích Pro",
-      customLinks: [
-        { label: "Tích hợp VietQR", url: "https://accounts.casso.vn/signup?returnTo=dYFr_6rDrHI99o0D0cq6Y" }, // Thầy thay link 1 ở đây
-        { label: "Tích hợp SePay", url: "https://sepay.vn?utm_source=INV&utm_medium=RFTRA&utm_campaign=E611D6B0" },  // Thầy thay link 2 ở đây
-        { label: "Tải code GAS", url: "https://docs.google.com/spreadsheets/d/1dX-yLVwsTeCDZZhII4xam_UQ4c6GipFYP7mQqHMaNrE/edit?usp=sharing" }  // Thầy thay link 2 ở đây
-      ]
     },
     {
       title: "Chuyển đổi PDF/Img sang word Tex 99,99%",
