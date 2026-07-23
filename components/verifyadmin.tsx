@@ -1,6 +1,66 @@
 export const URL_ADMIN = import.meta.env?.VITE_API_URL_ADMIN; // || "https://script.google.com/macros/s/AKfycbwlglx696Wr0BCj8SMAvwh1hlfFg66uemInbxI2W0TdE96wY67eZx_AAxxD5RJnl04NXg/exec"; 
 
 /**
+ * Tra cứu thông tin Giáo viên và Link Script qua IDGV (Số điện thoại)
+ */
+export const lookupTeacherByIDGV = async (
+  idgv: string
+): Promise<{ 
+  success: boolean; 
+  message: string; 
+  idgv?: string; 
+  fullname?: string; 
+  mon?: string; 
+  idmon?: string; 
+  licenseStatus?: string; 
+  linkScript?: string; 
+}> => {
+  if (!idgv.trim()) return { success: false, message: "Số điện thoại IDGV không được để trống!" };
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(URL_ADMIN, {
+      method: 'POST',
+      signal: controller.signal,
+      body: JSON.stringify({
+        action: 'lookupTeacher',
+        idgv: idgv.trim()
+      })
+    });
+    
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const result = await response.json();
+      if (result && result.success) {
+        return {
+          success: true,
+          message: result.message || "Tìm thấy thông tin Giáo viên!",
+          idgv: result?.idgv,
+          fullname: result?.fullname,
+          mon: result?.mon,
+          idmon: result?.idmon,
+          licenseStatus: result?.licenseStatus,
+          linkScript: result?.linkScript
+        };
+      } else if (result) {
+        return {
+          success: false,
+          message: result.message || "Không tìm thấy dữ liệu Giáo viên với IDGV này!"
+        };
+      }
+    }
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.error("Lỗi tra cứu IDGV:", err);
+  }
+
+  return { success: false, message: "Không thể kết nối đến máy chủ xác thực Admin!" };
+};
+
+/**
  * Xác thực tài khoản giáo viên qua sheet banquyen trên Google Sheet Admin (URL_ADMIN)
  */
 export const verifyBanquyen = async (
