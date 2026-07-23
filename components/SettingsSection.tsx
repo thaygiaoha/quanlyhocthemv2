@@ -94,7 +94,7 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
     }
   };
 
-  // Cập nhật toàn hệ thống và tự động ghi nhận Link Script vào cột G trên Google Sheet Admin (URL_ADMIN)
+  // Cập nhật toàn hệ thống: Ghi Mật khẩu Admin Ô C2 & Mức học phí lên Google Sheet cá nhân, đồng thời ghi nhận Link Web App lên Admin Sheet
   const handleSaveAll = async () => {
     const targetIdgv = idgv || config.idgv || '';
     const activePass = password.trim() || savedAuthPassword || config.passwordC2 || '';
@@ -120,11 +120,12 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
       }
     }
 
-    if (updatedConfig.sheetLink && window.confirm("Xác nhận cập nhật cấu hình và đồng bộ lên Google Sheets cá nhân?")) {
+    // Ghi Mật khẩu Ô C2 và thông số Mức học phí lên Google Sheet cá nhân (data.sheetLink)
+    if (updatedConfig.sheetLink && window.confirm("Xác nhận cập nhật Mật khẩu Ô C2 & Mức học phí lên Google Sheets cá nhân?")) {
         setSyncing(true);
         try {
             await syncSettingsToSheet(updatedConfig.sheetLink, updatedConfig.passwordC2, updatedConfig.fees);
-            alert(`Đồng bộ thành công cấu hình hệ thống & Link Script lên Google Sheets cá nhân!${scriptNote}`);
+            alert(`Đồng bộ thành công Mật khẩu Ô C2 & Mức học phí lên Google Sheets cá nhân!${scriptNote}`);
         } catch (err) {
             console.error("Lỗi khi lưu cấu hình:", err);
             alert(`Đã lưu cấu hình cục bộ! ${scriptNote}`);
@@ -136,11 +137,11 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
     }
   };
 
-  // Nút gửi trực tiếp Link Script cá nhân lên Google Sheet Admin (URL_ADMIN)
+  // Nút gửi trực tiếp Link Script cá nhân lên Google Sheet Admin (URL_ADMIN) và cập nhật ngaydata.sheetLink
   const handleSyncLinkToAdmin = async () => {
     const targetIdgv = idgv || config.idgv || '';
     const activePass = password.trim() || savedAuthPassword || config.passwordC2 || '';
-    const linkToSave = URL_ADMIN;
+    const linkToSave = (config.sheetLink && config.sheetLink.trim()) ? config.sheetLink.trim() : (config.linkScript || '');
 
     if (!targetIdgv) {
       alert("Thiếu số điện thoại IDGV!");
@@ -155,7 +156,17 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
     try {
       const res = await updateLinkScriptOnSheet(targetIdgv, activePass, linkToSave);
       if (res && res.success) {
-        alert(`✓ Đã ghi nhận Link Web App cá nhân (${linkToSave}) vào cột G sheet banquyen trên Google Sheet Admin thành công!`);
+        // Ngay lập tức cập nhật data.sheetLink là link đó!
+        const updatedConfig = {
+          ...config,
+          idgv: targetIdgv,
+          sheetLink: linkToSave,
+          linkScript: linkToSave
+        };
+        setConfig(updatedConfig);
+        onUpdate(updatedConfig);
+
+        alert(`✓ Đã ghi nhận Link Web App cá nhân (${linkToSave}) vào cột G sheet banquyen trên Google Sheet Admin và ngay lập tức cập nhật vào data.sheetLink thành công!`);
       } else {
         alert(`Không thể ghi vào Sheet Admin: ${res?.message || 'Lỗi không xác định'}`);
       }
