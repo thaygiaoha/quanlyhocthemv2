@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, CheckCircle2, AlertCircle, Trash2, Loader2, Lock } from 'lucide-react';
+import { Search, CheckCircle2, AlertCircle, Trash2, Loader2, Lock, QrCode, Copy, Download, X, CreditCard } from 'lucide-react';
 import { AppData } from '../types';
 import { allcheck } from '../src/utils/mathHelpers';
 
@@ -15,6 +15,19 @@ const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data }) => {
   const [isPayMode, setIsPayMode] = useState(false);  
   const [isResetting, setIsResetting] = useState(false);
   const [lanPage, setLanPage] = useState(0);
+
+  // --- STATE MODAL QR THANH TOÁN KHI CHƯA NỘP ---
+  const [qrModalData, setQrModalData] = useState<{
+    student: any;
+    lan: number;
+    amount: number;
+    qrUrl: string;
+    content: string;
+    bankId: string;
+    bankAccountNo: string;
+    bankAccountName: string;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // --- CÁC STATE CHO FORM GHI HỌC PHÍ ---
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
@@ -52,8 +65,10 @@ const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data }) => {
 };
 
 
-  // 1. Lấy danh sách học sinh gốc của lớp được chọn
-  const currentStudents = data.sheets[selectedClass]?.students || [];
+  // 1. Lấy danh sách học sinh gốc của lớp được chọn và dữ liệu lịch sử (Cột S đến AI)
+  const currentSheet = data.sheets[selectedClass];
+  const currentStudents = currentSheet?.students || [];
+  const historyBlocks: any[] = (currentSheet as any)?.historyBlocks || [];
 
   // 2. Trích xuất dữ liệu từ sheet ThuTien đã nạp trong data
   const rawThuTien = data.sheets['ThuTien']?.students || []; 
@@ -61,27 +76,24 @@ const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data }) => {
   // Lọc riêng bản ghi của lớp hiện tại
   const classNumber = selectedClass.replace('Lop', '');
   const classRecords = rawThuTien.filter((r: any) => {
-  if (!r || !r.lop) return false;
-  
-  // Trích xuất chuỗi số đầu tiên xuất hiện trong r.lop (Ví dụ: "12A1" -> "12")
-  const match = String(r.lop).match(/^\d+/);
-  const extractedClassNum = match ? match[0] : '';
-  
-  // So sánh phần số vừa trích xuất với classNumber của lớp đang chọn
-  return String(extractedClassNum) === String(classNumber);
-});
-  //const classRecords = rawThuTien.filter((r: any) => allcheck(r.lop, classNumber)); // String(r.lop).startsWith(classNumber));
+    if (!r || !r.lop) return false;
+    const match = String(r.lop).match(/^\d+/);
+    const extractedClassNum = match ? match[0] : '';
+    return String(extractedClassNum) === String(classNumber);
+  });
 
-  // 3. Tìm số Lần nộp (L) lớn nhất thực tế đang có để vẽ cột động
-  const maxLanNop = classRecords.reduce((max: number, r: any) => {
+  // 3. Tìm số Lần nộp (L) lớn nhất (kết hợp cả từ Sheet ThuTien và cột S-AI lịch sử)
+  const maxLanFromRecords = classRecords.reduce((max: number, r: any) => {
     const num = parseInt(String(r.lanNop).replace('L', ''), 10);
     return !isNaN(num) && num > max ? num : max;
   }, 1);
 
+  const maxLanFromBlocks = historyBlocks.length;
+  const maxLanNop = Math.max(maxLanFromRecords, maxLanFromBlocks, 1);
+
   // Tạo mảng tuần tự các đợt nộp: [1, 2, 3, ...]
   const currentLans = Array.from({ length: maxLanNop }, (_, i) => i + 1);
 
-  // 4. Lọc tìm kiếm học sinh theo tên
   // 4. Lọc tìm kiếm học sinh theo Tên hoặc Mã HS (Code) để chính xác tuyệt đối
   const filteredStudents = currentStudents.filter(s => {
     const searchLower = searchTerm.toLowerCase().trim();
@@ -91,10 +103,41 @@ const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data }) => {
     const matchSchool = s.school && String(s.school).toLowerCase().includes(searchLower);
     return matchName || matchCode || matchClass || matchSchool;
   });
+
   const formatCurrency = (amount: any) => {
     const num = parseFloat(amount);
     if (isNaN(num)) return amount;
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+  };
+
+  // Mở modal hiển thị mã QR thanh toán khi phụ huynh / GV nhấn vào nút "Chưa nộp"
+  const handleShowQrModal = (student: any, lan: number, customAmount?: number) => {
+    // Tìm số tiền ở lịch sử (Cột AI của đợt nộp tương ứng)
+    const block = historyBlocks.find((b: any) => b.lan === lan);
+    const histStudent = block?.students?.find((s: any) => allcheck(s.code, student.code));
+    
+    // Ưu tiên số tiền từ cột AI, nếu không có lấy từ customAmount hoặc student.totalAmount hoặc mặc định
+    const amount = histStudent?.totalAmount || customAmount || student.totalAmount || 600000;
+    const cleanAmount = Math.round(Number(amount) || 600000);
+
+    const bankId = data.bankId || 'Vietinbank';
+    const bankAccountNo = data.bankAccountNo || '104887594225';
+    const bankAccountName = data.bankAccountName || 'NGUYEN VAN HA';
+    const content = `SEVQR ${student.code || student.stt} L${lan}`;
+
+    const qrUrl = `https://img.vietqr.io/image/${bankId}-${bankAccountNo}-compact2.png?amount=${cleanAmount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(bankAccountName)}`;
+
+    setQrModalData({
+      student,
+      lan,
+      amount: cleanAmount,
+      qrUrl,
+      content,
+      bankId,
+      bankAccountNo,
+      bankAccountName
+    });
+    setCopied(false);
   };
 const LAN_PER_PAGE = 6;
 
@@ -513,21 +556,31 @@ if (!isAuthorizedV) {
                             return r.lanNop === `L${lan}` && allcheck(r.code, student.code);
                           });
 
+                          // Lấy số tiền từ cột AI trong khối lịch sử S-AI (đợt nộp tương ứng)
+                          const block = historyBlocks.find((b: any) => b.lan === lan);
+                          const histStudent = block?.students?.find((s: any) => allcheck(s.code, student.code));
+                          const amountForLan = histStudent?.totalAmount || student.totalAmount || 600000;
+
                           return (
                             <td key={lan} className="p-3 text-center">
                               {record ? (
                                 <div className="inline-flex flex-col items-center">
                                   <span className="text-emerald-600 font-extrabold text-xs bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 flex items-center gap-1">
                                     <CheckCircle2 size={13} />
-                                    {formatCurrency(record.soTien)}
+                                    {formatCurrency(record.soTien || amountForLan)}
                                   </span>
                                   <span className="text-[10px] text-slate-400 mt-0.5 font-mono">{record.date}</span>
                                 </div>
                               ) : (
-                                <span className="text-red-600 font-medium text-xs bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/60 inline-flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleShowQrModal(student, lan, amountForLan)}
+                                  className="text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 font-extrabold text-xs px-2.5 py-1 rounded-lg border border-red-200 inline-flex items-center gap-1.5 transition-all shadow-sm cursor-pointer hover:scale-105 active:scale-95"
+                                  title="Phụ huynh / GV nhấp vào đây để hiển thị mã QR chuyển khoản"
+                                >
                                   <AlertCircle size={14} className="text-red-600" />
-                                  Chưa nộp
-                                </span>
+                                  <span>Chưa nộp</span>
+                                </button>
                               )}
                             </td>
                           );
@@ -547,9 +600,117 @@ if (!isAuthorizedV) {
           </div>
         </div>
       )}
+
+      {/* MODAL MÃ QR THANH TOÁN CHO PHỤ HUYNH / GV NỘP HỌC PHÍ */}
+      {qrModalData && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                  <QrCode className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-lg text-white">Quét Mã QR Nộp Học Phí</h3>
+                  <p className="text-xs text-blue-100 font-medium">Lần {qrModalData.lan} - Lớp {qrModalData.student.class || selectedClass}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setQrModalData(null)}
+                className="p-1.5 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-5">
+              {/* Thông tin học sinh */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Học sinh</div>
+                  <div className="font-extrabold text-slate-800 text-base">{qrModalData.student.name}</div>
+                  <div className="text-xs text-slate-500 font-mono">Mã HS: {qrModalData.student.code || qrModalData.student.stt}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Số tiền nộp</div>
+                  <div className="font-black text-emerald-600 text-lg">{formatCurrency(qrModalData.amount)}</div>
+                </div>
+              </div>
+
+              {/* Ảnh Mã QR VietQR */}
+              <div className="flex flex-col items-center justify-center bg-slate-50/50 p-4 rounded-2xl border border-slate-200/80">
+                <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+                  <img
+                    src={qrModalData.qrUrl}
+                    alt="Mã QR Chuyển khoản"
+                    className="w-56 h-56 object-contain rounded-lg"
+                  />
+                </div>
+                <p className="text-xs text-slate-500 font-medium mt-3 text-center">
+                  Quét mã QR bằng ứng dụng Ngân hàng hoặc Ví điện tử
+                </p>
+              </div>
+
+              {/* Thông tin Chuyển khoản & Nội dung */}
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-slate-500 font-medium">Ngân hàng:</span>
+                  <span className="font-bold text-slate-800">{qrModalData.bankId}</span>
+                </div>
+                <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-slate-500 font-medium">Số tài khoản:</span>
+                  <span className="font-bold font-mono text-slate-800">{qrModalData.bankAccountNo}</span>
+                </div>
+                <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-slate-500 font-medium">Chủ tài khoản:</span>
+                  <span className="font-bold text-slate-800">{qrModalData.bankAccountName}</span>
+                </div>
+                <div className="flex items-center justify-between p-2.5 bg-blue-50/80 rounded-xl border border-blue-100">
+                  <span className="text-blue-600 font-medium">Nội dung CK:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-extrabold text-blue-800">{qrModalData.content}</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(qrModalData.content);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors cursor-pointer"
+                      title="Sao chép nội dung chuyển khoản"
+                    >
+                      {copied ? <CheckCircle2 size={15} className="text-emerald-600" /> : <Copy size={15} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3">
+              <a
+                href={qrModalData.qrUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                download={`QR_HocPhi_${qrModalData.student.code || qrModalData.student.stt}_L${qrModalData.lan}.png`}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Download size={14} />
+                Tải QR về
+              </a>
+              <button
+                onClick={() => setQrModalData(null)}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
 
 export default PaymentHistorySection;
