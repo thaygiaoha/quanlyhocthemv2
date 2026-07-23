@@ -89,17 +89,18 @@ const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data, onUpdate, 
     );
   });
 
-  // 3. Tìm số Lần nộp (L) lớn nhất (kết hợp cả từ Sheet ThuTien và cột S-AI lịch sử)
+  // 3. Tìm số Lần nộp (L) lớn nhất từ dữ liệu bên phải cột S-AI (historyBlocks) hoặc bản ghi ThuTien
   const maxLanFromRecords = classRecords.reduce((max: number, r: any) => {
     const num = parseInt(String(r.lanNop).replace('L', ''), 10);
     return !isNaN(num) && num > max ? num : max;
-  }, 1);
+  }, 0);
 
   const maxLanFromBlocks = historyBlocks.length;
-  const maxLanNop = Math.max(maxLanFromRecords, maxLanFromBlocks, 1);
+  // CHỈ HIỂN THỊ ĐỢT NỘP KHI ĐÃ CÓ DỮ LIỆU BÊN PHẢI (SHEET) HẶC BẢN GHI THU TIỀN
+  const maxLanNop = Math.max(maxLanFromRecords, maxLanFromBlocks);
 
-  // Tạo mảng tuần tự các đợt nộp: [1, 2, 3, ...]
-  const currentLans = Array.from({ length: maxLanNop }, (_, i) => i + 1);
+  // Tạo mảng tuần tự các đợt nộp: [1, 2, 3, ...] (nếu maxLanNop = 0 thì mảng rỗng)
+  const currentLans = maxLanNop > 0 ? Array.from({ length: maxLanNop }, (_, i) => i + 1) : [];
 
   // 4. Lọc tìm kiếm học sinh theo Tên hoặc Mã HS (Code) để chính xác tuyệt đối
   const filteredStudents = currentStudents.filter(s => {
@@ -534,8 +535,22 @@ if (!isAuthorizedV) {
             </table>
           </div>
         </div>
+      ) : currentLans.length === 0 ? (
+        /* THÔNG BÁO KHI CHƯA CÓ DỮ LIỆU ĐỢT THU Ở CỘT BÊN PHẢI */
+        <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-8 text-center shadow-sm my-4">
+          <div className="w-14 h-14 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center mx-auto mb-3 font-bold text-2xl shadow-sm border border-amber-200">
+            📋
+          </div>
+          <h4 className="text-base font-extrabold text-slate-800 mb-1">
+            Chưa có đợt thu học phí nào được công bố cho Lớp {classNumber}
+          </h4>
+          <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
+            Dữ liệu các đợt thu học phí (ở các cột bên phải Google Sheet) hiện chưa được lưu.
+            Khi Thầy/Cô khởi tạo và lưu nhật ký học phí trên Google Sheet, đợt thu mới sẽ tự động xuất hiện tại đây để Phụ huynh/Học sinh xem và chuyển khoản.
+          </p>
+        </div>
       ) : (
-        /* CHẾ ĐỘ XEM 2: BẢNG NHẬT KÝ NỘP TIỀN GỐC */
+        /* CHẾ ĐỘ XEM 2: BẢNG NHẬT KÝ NỘP TIỀN GỐC (KHI ĐÃ CÓ DỮ LIỆU BÊN PHẢI) */
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -595,7 +610,7 @@ if (!isAuthorizedV) {
                                   title="Phụ huynh / GV nhấp vào đây để hiển thị mã QR chuyển khoản"
                                 >
                                   <AlertCircle size={14} className="text-red-600" />
-                                  <span>Nộp ngay</span>
+                                  <span>Chưa nộp</span>
                                 </button>
                               )}
                             </td>
