@@ -392,7 +392,6 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     alert("Đã cập nhật và lưu cấu hình tài khoản ngân hàng thành công! 💾");
 
   };
-
   // XỬ LÝ CHỌN CHECKBOX HÀNG LOẠT
   const handleToggleSelectStudent = (studentKey: string) => {
     const newSelected = new Set(selectedStudentsForBulk);
@@ -422,7 +421,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
 
   // TẠO URL VIETQR ĐỘNG
   const generateQrUrl = (student: Student, amount: number) => {
-    const code = student.code || student.name || "";
+    const code = student.code || "";
     
     // Nếu mã không phải Chủ Nhiệm (CN) thì lấy selectedLanNop (L1, L2...)
     const lanNopHienTai = !code.toUpperCase().startsWith("CN") ? selectedLanNop : "";
