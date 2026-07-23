@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppData } from '../types';
 import { verifyBanquyen } from './verifyadmin';
+import { allcheck } from '../src/utils';
 import { 
   GraduationCap, 
   QrCode, 
