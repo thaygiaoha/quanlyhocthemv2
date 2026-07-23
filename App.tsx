@@ -252,8 +252,8 @@ const App: React.FC = () => {
                className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
                title="Nhập IDGV của Giáo viên để Học sinh/Phụ huynh xem dữ liệu lớp học tương ứng"
              >
-               <Search size={14} className="text-emerald-600" />
-               <span>Tra cứu IDGV HS/PH</span>
+               <Search size={12} className="text-emerald-600" />
+               <span>Tra cứu số ĐT GV</span>
              </button>
 
              {/* NÚT REFRESH CHỦ ĐỘNG TRÊN HEADER */}
