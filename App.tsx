@@ -18,9 +18,22 @@ import ImportQR from './components/ImportQR';
 import GVCNSection from './components/GVCNSection';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<ViewMode>(ViewMode.DASHBOARD);
+  const [view, setView] = useState<ViewMode>(() => {
+    const savedView = localStorage.getItem('app_current_view');
+    if (savedView && Object.values(ViewMode).includes(savedView as ViewMode)) {
+      return savedView as ViewMode;
+    }
+    return ViewMode.DASHBOARD;
+  });
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  // Tự động lưu view hiện tại vào localStorage
+  useEffect(() => {
+    if (view) {
+      localStorage.setItem('app_current_view', view);
+    }
+  }, [view]);
+
   // 1. Khởi tạo dữ liệu: Ưu tiên lấy từ LocalStorage
   const [data, setData] = useState<AppData>(() => {
     const saved = localStorage.getItem('hocphi_data');
@@ -37,8 +50,11 @@ const App: React.FC = () => {
     }
     const initial: AppData = parsed || getAppData();
     const savedIdgv = localStorage.getItem('saved_idgv');
-    if (savedIdgv && !initial.idgv) {
+    if (savedIdgv && (!initial.idgv || !initial.idgv.trim())) {
       initial.idgv = savedIdgv;
+    }
+    if (!initial.sheetLink || !initial.sheetLink.trim()) {
+      initial.sheetLink = 'https://script.google.com/macros/s/AKfycbwlglx696Wr0BCj8SMAvwh1hlfFg66uemInbxI2W0TdE96wY67eZx_AAxxD5RJnl04NXg/exec';
     }
     return initial;
   });
@@ -46,7 +62,7 @@ const App: React.FC = () => {
   // 2307them2: Kiểm tra trạng thái đã kết nối Link Script
   const hasSheetLink = Boolean(data.sheetLink && data.sheetLink.trim() !== '');
 
-  // 2307sua2: Giới hạn truy cập - Nếu chưa kết nối Link Script thì tự động đưa về Dashboard nếu đang truy cập chức năng khác
+  // 2307sua2: Giới hạn truy cập - Nếu chưa kết nối Link Script thì tự động đưa về Dashboard
   useEffect(() => {
     if (!hasSheetLink && view !== ViewMode.DASHBOARD && view !== ViewMode.SETTINGS) {
       setView(ViewMode.DASHBOARD);
@@ -67,17 +83,21 @@ const App: React.FC = () => {
       const cloudData = await response.json();
       
       if (cloudData && cloudData.sheets) {
+        const effectiveLinkScript = (cloudData.linkScript && String(cloudData.linkScript).trim() !== '')
+          ? String(cloudData.linkScript).trim()
+          : (data.sheetLink || link);
+
         const updatedData: AppData = { 
           ...data, 
           sheets: cloudData.sheets, 
           passwordC2: cloudData.password || data.passwordC2,
-          licenseStatus: cloudData.licenseStatus !== undefined ? cloudData.licenseStatus : data.licenseStatus,
-          fullname: cloudData.fullname !== undefined ? cloudData.fullname : data.fullname,
-          mon: cloudData.mon !== undefined ? cloudData.mon : data.mon,
-          idmon: cloudData.idmon !== undefined ? cloudData.idmon : data.idmon,
-          linkScript: cloudData.linkScript !== undefined ? cloudData.linkScript : data.linkScript,
+          licenseStatus: (cloudData.licenseStatus !== undefined && cloudData.licenseStatus !== '') ? cloudData.licenseStatus : data.licenseStatus,
+          fullname: (cloudData.fullname !== undefined && cloudData.fullname !== '') ? cloudData.fullname : data.fullname,
+          mon: (cloudData.mon !== undefined && cloudData.mon !== '') ? cloudData.mon : data.mon,
+          idmon: (cloudData.idmon !== undefined && cloudData.idmon !== '') ? cloudData.idmon : data.idmon,
+          linkScript: effectiveLinkScript,
           idgv: activeIdgv || cloudData.idgv || data.idgv || '',
-          sheetLink: link 
+          sheetLink: effectiveLinkScript 
         };
         setData(updatedData);
         localStorage.setItem('hocphi_data', JSON.stringify(updatedData));
@@ -252,8 +272,8 @@ const App: React.FC = () => {
                className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
                title="Nhập IDGV của Giáo viên để Học sinh/Phụ huynh xem dữ liệu lớp học tương ứng"
              >
-               <Search size={12} className="text-emerald-600" />
-               <span>Tra cứu số ĐT GV</span>
+               <Search size={14} className="text-emerald-600" />
+               <span>Tra cứu IDGV HS/PH</span>
              </button>
 
              {/* NÚT REFRESH CHỦ ĐỘNG TRÊN HEADER */}
