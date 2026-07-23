@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, CheckCircle2, AlertCircle, Trash2, Loader2, Lock, QrCode, Copy, Download, X, CreditCard } from 'lucide-react';
+import { Search, CheckCircle2, AlertCircle, Trash2, Loader2, Lock, QrCode, Copy, Download, X } from 'lucide-react';
 import { AppData } from '../types';
 import { allcheck } from '../src/utils/mathHelpers';
 
