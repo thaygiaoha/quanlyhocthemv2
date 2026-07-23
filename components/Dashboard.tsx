@@ -92,7 +92,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
 {
   title: "Kiểm tra bản quyền",
   description: "Xác minh trạng thái bản quyền phần mềm để đảm bảo hệ thống hoạt động ổn định.",
-  features: ["Xác minh tự động", "Bảo vệ dữ liệu", "Cập nhật bản quyền"],
+  features: ["Xác minh tự động", "Bảo vệ dữ liệu", "Cập nhật bản quyền ngay sau khi đăng ký!"],
   icon: ShieldCheck,
   color: "from-amber-500 to-orange-600",
   shadow: "shadow-amber-100",
@@ -226,7 +226,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
     {/* Thông báo Dùng thử miễn phí bên cạnh chữ Kiểm tra bản quyền khi tắt bản quyền (false) */}
     {app.isLicenseCheck && data.enableCopyrightCheck === false && (
       <span className="px-2 py-0.5 text-[10px] font-extrabold bg-amber-100 text-amber-700 rounded-md shrink-0 border border-amber-200">
-        Dùng thử miễn phí
+        Dùng miễn phí
       </span>
     )}
   </div>
@@ -281,7 +281,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
   ) : (
     <div className="flex items-center gap-1.5 shrink-0">
       <button 
-        onClick={() => setShowQrModal(true)}
+        onClick={() => setShowQrModal(false)}
         className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 rounded-xl transition-all shrink-0 font-extrabold text-xs shadow-md shadow-amber-200"
       >
         <span>ĐK Vip</span>
