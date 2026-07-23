@@ -95,15 +95,17 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
   };
 
   const handleStudentLookupIDGV = async () => {
-    const inputIdgv = prompt("DÀNH CHO HỌC SINH / PHỤ HUYNH:\nNhập Số điện thoại IDGV của Thầy/Cô giáo để xem lớp học:", data.idgv || "");
+    const savedIdgv = data.idgv || localStorage.getItem('saved_idgv') || "";
+    const inputIdgv = prompt("DÀNH CHO HỌC SINH / PHỤ HUYNH:\nNhập Số điện thoại IDGV của Thầy/Cô giáo để xem lớp học:", savedIdgv);
     if (!inputIdgv || !inputIdgv.trim()) return;
 
     try {
-      const res = await lookupTeacherByIDGV(inputIdgv.trim());
+      const targetIdgv = inputIdgv.trim();
+      const res = await lookupTeacherByIDGV(targetIdgv);
       if (res.success && res.linkScript) {
         const updatedData: AppData = {
           ...data,
-          idgv: res.idgv || inputIdgv.trim(),
+          idgv: res.idgv || targetIdgv,
           fullname: res.fullname || data.fullname,
           mon: res.mon || data.mon,
           idmon: res.idmon || data.idmon,
@@ -111,13 +113,14 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
           linkScript: res.linkScript,
           sheetLink: res.linkScript
         };
+        localStorage.setItem('saved_idgv', res.idgv || targetIdgv);
         onUpdate(updatedData);
         if (onRefreshData) {
           await onRefreshData();
         }
-        alert(`Thành công! Đã kết nối sang Lớp học của Giáo viên: ${res.fullname || inputIdgv} (${res.mon || 'Môn học'})!`);
+        alert(`Thành công! Đã kết nối sang Lớp học của Giáo viên: ${res.fullname || targetIdgv} (${res.mon || 'Môn học'})!`);
       } else {
-        alert(res.message || `Không tìm thấy IDGV: ${inputIdgv}`);
+        alert(res.message || `Không tìm thấy IDGV: ${targetIdgv}`);
       }
     } catch (err) {
       console.error(err);
