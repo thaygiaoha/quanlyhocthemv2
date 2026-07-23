@@ -1,8 +1,9 @@
 export const URL_ADMIN = import.meta.env?.VITE_API_URL_ADMIN || "https://script.google.com/macros/s/AKfycbwlglx696Wr0BCj8SMAvwh1hlfFg66uemInbxI2W0TdE96wY67eZx_AAxxD5RJnl04NXg/exec"; 
 
-// 2307sua2: Xác thực tài khoản giáo viên qua sheet banquyen trên Google Sheet Admin (URL_ADMIN)
+/**
+ * Xác thực tài khoản giáo viên qua sheet banquyen trên Google Sheet Admin (URL_ADMIN)
+ */
 export const verifyBanquyen = async (
-  sheetLink: string, 
   idgv: string,
   password: string
 ): Promise<{ 
@@ -21,118 +22,114 @@ export const verifyBanquyen = async (
   if (!idgv.trim()) return { success: false, message: "Số điện thoại IDGV không được để trống!" };
   if (!password.trim()) return { success: false, message: "Mật khẩu không được để trống!" };
   
-  // 2307them2: Ưu tiên gửi yêu cầu xác thực tới Google Sheet Admin (URL_ADMIN) để lấy dữ liệu bản quyền và link script
-  const targetUrls = Array.from(new Set([URL_ADMIN, sheetLink].filter(Boolean)));
-  let lastResult = { success: false, message: "Không thể kết nối đến máy chủ xác thực!" };
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  for (const url of targetUrls) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(URL_ADMIN, {
+      method: 'POST',
+      signal: controller.signal,
+      body: JSON.stringify({
+        action: 'checkBanquyen',
+        idgv: idgv.trim(),
+        password: password.trim()
+      })
+    });
+    
+    clearTimeout(timeoutId);
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        signal: controller.signal,
-        body: JSON.stringify({
-          action: 'checkBanquyen',
-          idgv: idgv,
-          password: password
-        })
-      });
-      
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result && result.success) {
-          return {
-            success: true,
-            message: result.message || "Xác thực thành công!",
-            idgv: result?.idgv,
-            fullname: result?.fullname,
-            mon: result?.mon,
-            idmon: result?.idmon,
-            licenseStatus: result?.licenseStatus,
-            linkScript: result?.linkScript,
-            level: result?.level,
-            hetHan: result?.hetHan,
-            checkBanquyen: result?.checkBanquyen
-          };
-        } else if (result) {
-          lastResult = {
-            success: false,
-            message: result.message || "Số điện thoại IDGV hoặc mật khẩu không chính xác!"
-          };
-        }
+    if (response.ok) {
+      const result = await response.json();
+      if (result && result.success) {
+        return {
+          success: true,
+          message: result.message || "Xác thực thành công!",
+          idgv: result?.idgv,
+          fullname: result?.fullname,
+          mon: result?.mon,
+          idmon: result?.idmon,
+          licenseStatus: result?.licenseStatus,
+          linkScript: result?.linkScript,
+          level: result?.level,
+          hetHan: result?.hetHan,
+          checkBanquyen: result?.checkBanquyen
+        };
+      } else if (result) {
+        return {
+          success: false,
+          message: result.message || "Số điện thoại IDGV hoặc mật khẩu không chính xác!"
+        };
       }
-    } catch (err) {
-      clearTimeout(timeoutId);
-      console.error("2307sua2: Lỗi xác thực bản quyền tới", url, err);
     }
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.error("Lỗi xác thực bản quyền tới URL_ADMIN:", err);
   }
 
-  return lastResult;
+  return { success: false, message: "Không thể kết nối đến máy chủ xác thực Admin!" };
 };
 
-// 2307sua2: Cập nhật link script cho giáo viên trực tiếp vào cột G sheet banquyen trên Google Sheet của Admin (URL_ADMIN)
+/**
+ * Cập nhật link script cho giáo viên trực tiếp vào cột G sheet banquyen trên Google Sheet Admin (URL_ADMIN)
+ */
 export const updateLinkScriptOnSheet = async (
-  sheetLink: string,
   idgv: string,
   password: string,
   newLinkScript: string
 ): Promise<{ success: boolean; message: string }> => {
-  // 2307them2: Luôn gửi yêu cầu cập nhật Link Script trực tiếp về URL_ADMIN để Admin quản lý tập trung
-  const targetUrls = Array.from(new Set([URL_ADMIN, sheetLink].filter(Boolean)));
-  let lastResult = { success: false, message: "Cập nhật Link Script thất bại!" };
+  if (!idgv.trim()) return { success: false, message: "Thiếu thông tin IDGV!" };
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  for (const url of targetUrls) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(URL_ADMIN, {
+      method: 'POST',
+      signal: controller.signal,
+      body: JSON.stringify({
+        action: 'updateLinkScript',
+        idgv: idgv.trim(),
+        password: password.trim(),
+        linkScript: newLinkScript.trim()
+      })
+    });
+    
+    clearTimeout(timeoutId);
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        signal: controller.signal,
-        body: JSON.stringify({
-          action: 'updateLinkScript',
-          idgv: idgv,
-          password: password,
-          linkScript: newLinkScript
-        })
-      });
-      
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result && result.success) {
-          lastResult = {
-            success: true,
-            message: result.message || "Cập nhật Link Script vào cột G (Sheet Admin) thành công!"
-          };
-          break; // Đã cập nhật thành công vào Admin Sheet
-        }
+    if (response.ok) {
+      const result = await response.json();
+      if (result && result.success) {
+        return {
+          success: true,
+          message: result.message || "Cập nhật Link Script vào cột G (Sheet Admin) thành công!"
+        };
+      } else if (result) {
+        return {
+          success: false,
+          message: result.message || "Không thể cập nhật Link Script trên Sheet Admin."
+        };
       }
-    } catch (err) {
-      clearTimeout(timeoutId);
-      console.error("2307sua2: Lỗi cập nhật link script tới", url, err);
     }
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.error("Lỗi cập nhật link script tới URL_ADMIN:", err);
   }
 
-  return lastResult;
+  return { success: false, message: "Lỗi kết nối tới máy chủ Admin!" };
 };
 
 export const verifyAdminPassword = async (
-  sheetLink: string, 
+  targetUrl: string, 
   password: string
-): Promise<{ success: boolean; message: string }> => { // Thay đổi kiểu trả về ở đây
+): Promise<{ success: boolean; message: string }> => {
   if (!password.trim()) return { success: false, message: "Mật khẩu không được để trống!" };
+  if (!targetUrl) return { success: false, message: "Chưa cấu hình URL kết nối!" };
   
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 6000);
 
   try {
-    const response = await fetch(sheetLink, {
+    const response = await fetch(targetUrl, {
       method: 'POST',
       signal: controller.signal,
       body: JSON.stringify({
@@ -145,10 +142,7 @@ export const verifyAdminPassword = async (
 
     if (!response.ok) return { success: false, message: "Lỗi kết nối Server mạng!" };
 
-    // Đọc dữ liệu JSON trả về từ GAS
     const result = await response.json();
-    
-    // Trả về đúng những gì GAS gửi qua, nếu thiếu thì backup bằng câu thông báo mặc định
     return {
       success: result && result.success === true,
       message: result && result.message ? result.message : "Không có phản hồi từ hệ thống!"
@@ -156,7 +150,8 @@ export const verifyAdminPassword = async (
 
   } catch (err) {
     clearTimeout(timeoutId);
-    console.error("Lỗi xác thực:", err);
+    console.error("Lỗi xác thực admin:", err);
     return { success: false, message: "Hệ thống bận hoặc kết nối bị ngắt!" };
   }
 };
+
