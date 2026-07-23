@@ -4,9 +4,9 @@
  * GOOGLE APPS SCRIPT - PHIÊN BẢN CẬP NHẬT PHÍ & PASS
  */
 
-var SPREADSHEET_ID = "1OiSvTPGmhmVsNA_VszzCvYMlxt52Dgx86U4kf_2FMfc";
+var SPREADSHEET_ID = "11yDgsUC89JTQoxPLd8J6u4JD3F7joymzl6ky0SL9h0E";
 var maxrowhs = 101;
-var phibanquyen = 500000;
+var phibanquyen = 199000;
 
 
 function getSS() {
@@ -16,7 +16,7 @@ function getSS() {
 function doGet(e) {
   var ss = getSS();
 
-  // 2107them: Tự động đồng bộ và cập nhật bản quyền khi đồng bộ dữ liệu
+  // Tự động đồng bộ và cập nhật bản quyền khi đồng bộ dữ liệu
   try {
     syncLicenseWithTransactionCN(ss);
   } catch (err) {
@@ -33,7 +33,7 @@ function doGet(e) {
     password: String(passAdmin)
   };
 
-  // 2107them: Trả về trạng thái bản quyền nếu có truyền tham số idgv (số điện thoại)
+  // Trả về trạng thái bản quyền nếu có truyền tham số idgv (số điện thoại)
   var idgvParam = (e && e.parameter && e.parameter.idgv) ? String(e.parameter.idgv).trim() : "";
   if (idgvParam) {
     var bqSheet = ss.getSheetByName("banquyen");
@@ -132,11 +132,11 @@ function doGet(e) {
     }
     // TRƯỜNG HỢP 2: Xử lý riêng biệt cho sheet "ThuTien" (Không đổi cấu trúc sheet gốc của thầy)
     else if (name === "ThuTien") {
-      // 2007Them / 2004Sua: Tự động cập nhật vào sheet(ThuTien) từ sheet(transactionkd) trước khi đọc hiển thị
+      // Tự động cập nhật vào sheet(ThuTien) từ sheet(transactionkd) trước khi đọc hiển thị
       try {
         syncThuTienWithTransactionKD(ss);
       } catch (err) {
-        console.error("Lỗi đồng bộ 2007Them ThuTien:", err.toString());
+        console.error("Lỗi đồng bộ ThuTien:", err.toString());
       }
 
       var vals = sh.getDataRange().getValues();
@@ -170,7 +170,7 @@ function doGet(e) {
       // Gom gọn dữ liệu nhật ký nộp tiền vào cấu trúc sheet chung
       resultData.sheets[name] = { students: logs };
     }
-    // 1807Them2: Xử lý riêng biệt cho sheet "GVCN" (Chủ nhiệm) để hiển thị danh sách nộp tiền
+    // Xử lý riêng biệt cho sheet "GVCN" (Chủ nhiệm) để hiển thị danh sách nộp tiền
     else if (name === "GVCN") {
       // 1907GVCN: Tự động đồng bộ số tiền nộp từ sheet transactioncn mới nhất theo mã HS trước khi đọc hiển thị
       try {
@@ -222,9 +222,9 @@ function doPost(e) {
   } catch (err) {
     return createResponse("Lỗi phân tích JSON: " + err.toString(), 400);
   }
-  
+
   var action = postData.action;
-  // ================= 1807Them2: XỬ LÝ QUẢN LÝ DANH SÁCH GVCN =================
+  // XỬ LÝ QUẢN LÝ DANH SÁCH GVCN
   if (action === "importGVCN") {
     var inputPassword = postData.password;
     var adminSheet = ss.getSheetByName("hocphi");
@@ -247,7 +247,7 @@ function doPost(e) {
         sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clear();
       }
     }
-    
+
     // Đảm bảo hàng tiêu đề chuẩn
     sheet.getRange(1, 1, 1, 7).setValues([["STT", "Họ và tên", "Lớp", "Mã HS", "Số tiền nộp", "Ghi chú", "Tổng nộp"]]);
     sheet.getRange("A1:G1").setFontWeight("bold").setBackground("#f3f3f3");
@@ -305,7 +305,7 @@ function doPost(e) {
 
     var s = postData.student;
     var vals = sheet.getDataRange().getValues();
-    
+
     // Kiểm tra trùng mã học sinh trong GVCN sheet
     var inputCode = String(s.code || "").trim().toLowerCase();
     if (inputCode !== "") {
@@ -436,7 +436,7 @@ function doPost(e) {
 
     if (foundIndex !== -1) {
       sheet.deleteRow(foundIndex);
-      
+
       // Đánh lại STT ở cột A
       var newValues = sheet.getDataRange().getValues();
       var count = 1;
@@ -484,7 +484,7 @@ function doPost(e) {
             luuSheet.appendRow(["ID", "Ngân Hàng", "Số Tài Khoản", "Số Tiền", "Loại", "Ngày", "Mô Tả"]);
             luuSheet.getRange("A1:G1").setFontWeight("bold").setBackground("#f3f3f3");
           }
-          
+
           var txData = txSheet.getRange(2, 1, txLastRow - 1, 7).getValues();
           var luuLastRow = luuSheet.getLastRow();
           // Sao chép dữ liệu giao dịch sang hàng tiếp theo
@@ -512,7 +512,7 @@ function doPost(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
   // =========================================================================
-// 2007Them: resetTransactionKD - Chuyển giao dịch từ transactionkd sang luutransaction và xóa sạch transactionkd
+  // resetTransactionKD - Chuyển giao dịch từ transactionkd sang luutransaction và xóa sạch transactionkd
   if (action === "resetTransactionKD") {
     var inputPassword = postData.password;
     var adminSheet = ss.getSheetByName("hocphi");
@@ -588,7 +588,7 @@ function doPost(e) {
 
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
-        message: "Đã resetTransactionKD (2007Them): Chuyển xong các giao dịch sang sheet luutransaction và làm sạch sheet transactionkd thành công!"
+        message: "Đã resetTransactionKD: Chuyển xong các giao dịch sang sheet luutransaction và làm sạch sheet transactionkd thành công!"
       })).setMimeType(ContentService.MimeType.JSON);
 
     } catch (err) {
@@ -661,9 +661,6 @@ function doPost(e) {
     }
   }
   // ===================================================================================
-  // Xóa 1 học sinh
-  // --- THÊM ĐOẠN NÀY VÀO TRONG HÀM doPost(e) ---
-  // Xóa một học sinh cụ thể dựa trên tên (hoặc số điện thoại) trong lớp
   if (action === "deleteStudent") {
     var targetSheetName = postData.className;
     var studentName = postData.studentName;
@@ -692,10 +689,25 @@ function doPost(e) {
     }
 
     if (foundIndex !== -1) {
-      // Xóa hàng học sinh đó
+      // 2207themdelete: Sao lưu dữ liệu nhật ký điểm danh từ cột R (18) đến cột AI (35) trước khi xóa dòng
+      var maxRow = Math.max(sheet.getLastRow(), 1);
+      var backupRange = sheet.getRange(1, 18, maxRow, 18); // 18 cột: R(18) đến AI(35)
+      var backupValues = backupRange.getValues();
+      var backupFormulas = backupRange.getFormulas();
+
+      // 2207suadelete: Xóa hàng học sinh
       sheet.deleteRow(foundIndex);
 
-      // Định dạng lại hàng trống vừa chèn cho sạch (nếu cần)      
+      // 2207themdelete: Khôi phục lại nhật ký điểm danh từ cột R đến cột AI từ dữ liệu sao lưu
+      var targetRange = sheet.getRange(1, 18, backupValues.length, 18);
+      targetRange.setValues(backupValues);
+      for (var r = 0; r < backupFormulas.length; r++) {
+        for (var c = 0; c < backupFormulas[r].length; c++) {
+          if (backupFormulas[r] && backupFormulas[r][c] && String(backupFormulas[r][c]).indexOf("=") === 0) {
+            sheet.getRange(r + 1, 18 + c).setFormula(backupFormulas[r][c]);
+          }
+        }
+      }
 
       // Đánh lại số thứ tự (STT) ở cột A cho các học sinh còn lại trong bảng chính
       var newValues = sheet.getDataRange().getValues();
@@ -716,23 +728,33 @@ function doPost(e) {
     var feeSheet = ss.getSheetByName("hocphi");
     if (feeSheet) {
       // 1. Cập nhật mật khẩu vào C2
-      feeSheet.getRange("C2").setValue(postData.password);
+      if (postData.password !== undefined && postData.password !== null) {
+        feeSheet.getRange("C2").setValue(postData.password);
+      }
 
       // 2. Cập nhật học phí theo từng lớp
-      // postData.fees truyền sang dạng: [{className: "Lop10", fee: maxrowhs - 1000}, ...]
       if (postData.fees && postData.fees.length > 0) {
         var rangeA = feeSheet.getRange("A:A").getValues(); // Lấy hết cột A để tìm tên lớp
 
         postData.fees.forEach(function (item) {
+          if (!item || item.className === undefined) return;
+          var searchClassName = String(item.className).trim().toLowerCase();
+
           for (var i = 0; i < rangeA.length; i++) {
-            // Nếu tìm thấy tên lớp ở cột A (Ví dụ: "Lop10")
-            if (rangeA[i][0] == item.className) {
-              // Ghi phí vào cột B (cột số 2) của hàng đó (i + 1)
-              feeSheet.getRange(i + 1, 2).setValue(item.fee);
+            var rowClassName = String(rangeA[i][0] || "").trim().toLowerCase();
+            // So sánh linh hoạt tên lớp (ví dụ: Lop10, Lop 10, Lớp 10)
+            if (rowClassName === searchClassName || rowClassName.replace(/\s+/g, '') === searchClassName.replace(/\s+/g, '')) {
+              var newFee = Number(item.fee);
+              if (!isNaN(newFee)) {
+                feeSheet.getRange(i + 1, 2).setValue(newFee);
+              }
               var sheet = ss.getSheetByName(item.className);
-              var lastRow = sheet.getLastRow();
-              if (lastRow > 1) {
-                capNhatHocPhiSauDiemDanh(item.className);
+              if (sheet && sheet.getLastRow() > 1) {
+                try {
+                  capNhatHocPhiSauDiemDanh(item.className, ss);
+                } catch (err) {
+                  console.error("Lỗi capNhatHocPhiSauDiemDanh:", err.toString());
+                }
               }
               break;
             }
@@ -740,7 +762,10 @@ function doPost(e) {
         });
       }
 
-      return createResponse("Cập nhật thành công", 200);
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        message: "Cập nhật Mật khẩu Admin C2 và Mức học phí thành công!"
+      })).setMimeType(ContentService.MimeType.JSON);
     }
     return createResponse("Không tìm thấy sheet hocphi", 404);
   }
@@ -1045,7 +1070,7 @@ function doPost(e) {
     }
   }
 
-  // 2107them: Xác thực tài khoản giáo viên qua sheet banquyen
+  // Xác thực tài khoản giáo viên qua sheet banquyen
   if (action === "checkBanquyen") {
     try {
       syncLicenseWithTransactionCN(ss);
@@ -1103,7 +1128,7 @@ function doPost(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
-  // 2107them: Cập nhật link script cho giáo viên
+  // 2307sua2: Cập nhật link script cho giáo viên vào cột G (Cột 7) sheet banquyen trên Google Sheet Admin
   if (action === "updateLinkScript") {
     var inputIdgv = String(postData.idgv || "").trim();
     var inputPass = String(postData.password || "").trim();
@@ -1131,19 +1156,20 @@ function doPost(e) {
       var idgv = String(row[0]).trim();
       var pass = String(row[2]).trim();
 
-      if (idgv === inputIdgv && pass === inputPass) {
+      // 2307sua2: Khớp số điện thoại IDGV (và mật khẩu khớp hoặc linh hoạt nếu mật khẩu rỗng khi đồng bộ)
+      if (idgv === inputIdgv && (pass === inputPass || !inputPass || inputPass === "")) {
         bqSheet.getRange(i + 2, 7).setValue(newLinkScript);
         SpreadsheetApp.flush();
         return ContentService.createTextOutput(JSON.stringify({
           success: true,
-          message: "Cập nhật Link Script thành công!"
+          message: "Cập nhật Link Script vào cột G (Sheet banquyen) thành công!"
         })).setMimeType(ContentService.MimeType.JSON);
       }
     }
 
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
-      message: "Không có quyền cập nhật hoặc sai thông tin xác thực!"
+      message: "Không tìm thấy giáo viên IDGV tương ứng trong sheet banquyen!"
     })).setMimeType(ContentService.MimeType.JSON);
   }
   // Reset toàn bộ lớp học (Xóa sạch học sinh, giữ lại hàng tiêu đề 1)
@@ -1313,8 +1339,12 @@ function getHocPhiTheoLop(ss, className) {
  
  * @param {string} className - Tên sheet lớp vừa điểm danh (Ví dụ: "Lop12")
  */
-function capNhatHocPhiSauDiemDanh(className) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+function capNhatHocPhiSauDiemDanh(className, ssParam) {
+  var ss = ssParam || getSS();
+  if (!ss) {
+    console.error("Không thể kết nối Spreadsheet");
+    return;
+  }
   var sheetLop = ss.getSheetByName(className);
   if (!sheetLop) {
     console.error("Không tìm thấy sheet lớp: " + className);
@@ -1360,7 +1390,7 @@ function capNhatHocPhiSauDiemDanh(className) {
 // Hàm lấy cấu hình bảo mật từ Script Properties
 function getPayOSConfig() {
   const scriptProperties = PropertiesService.getScriptProperties();
-  
+
   return {
     clientId: scriptProperties.getProperty('CLIENT_ID'),
     apiKey: scriptProperties.getProperty('API_KEY'),
@@ -1389,12 +1419,12 @@ function logWebhook(ss, payload, status) {
       sheet.appendRow(["Thời gian", "Nội dung JSON nhận được", "Kết quả xử lý"]);
       sheet.getRange("A1:C1").setFontWeight("bold").setBackground("#f3f3f3");
     }
-    
+
     var lastRow = sheet.getLastRow();
     if (lastRow > 200) {
       sheet.deleteRows(2, 50); // Xóa bớt 50 dòng cũ để tránh phình to dung lượng sheet
     }
-    
+
     var timeStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
     var payloadStr = typeof payload === "string" ? payload : JSON.stringify(payload);
     sheet.appendRow([timeStr, payloadStr, status]);
@@ -1414,19 +1444,19 @@ function syncToTHHT() {
   } else {
     targetSheet.clear();
   }
-  
+
   // Thiết lập tiêu đề dòng 1
   var headers = ["STT", "name", "class", "school", "phoneNumber", "code"];
   targetSheet.appendRow(headers);
   targetSheet.getRange("A1:F1").setFontWeight("bold").setBackground("#f3f3f3");
-  
+
   var allSheets = ss.getSheets();
   var allStudents = [];
-  
+
   for (var i = 0; i < allSheets.length; i++) {
     var sheet = allSheets[i];
     var sheetName = sheet.getName();
-    
+
     // Chỉ lấy từ các sheet có tên bắt đầu bằng "Lop" (bỏ qua GVCN, ThuTien, hocphi, WebhookLogs, v.v.)
     if (sheetName.indexOf("Lop") === 0) {
       // Đọc khung maxrowhs hàng, 6 cột đầu tiên (từ dòng 2 trở đi để lấy thông tin cơ bản)
@@ -1446,17 +1476,17 @@ function syncToTHHT() {
       }
     }
   }
-  
+
   if (allStudents.length > 0) {
     // Đánh lại số thứ tự (STT) từ 1 đến N liên tục
     for (var k = 0; k < allStudents.length; k++) {
       allStudents[k][0] = k + 1;
     }
-    
+
     // Ghi dữ liệu sạch vào sheet THHT
     targetSheet.getRange(2, 1, allStudents.length, 6).setValues(allStudents);
   }
-  
+
   // Định dạng tự động giãn cột và chỉnh chiều cao hàng
   targetSheet.autoResizeColumns(1, 6);
   var lastRow = targetSheet.getLastRow();
@@ -1475,14 +1505,14 @@ function saveToTransactionSheet(ss, postData, rawContents) {
   if (!sheet) {
     sheet = ss.insertSheet("transaction");
     sheet.appendRow([
-      "Thời gian giao dịch", 
-      "Mã giao dịch (Ref/ID)", 
-      "Số tiền (Amount)", 
-      "Nội dung chuyển khoản", 
-      "Người gửi (Sender)", 
-      "Tài khoản nhận", 
-      "Ngân hàng / Cổng", 
-      "Thời gian nhận webhook", 
+      "Thời gian giao dịch",
+      "Mã giao dịch (Ref/ID)",
+      "Số tiền (Amount)",
+      "Nội dung chuyển khoản",
+      "Người gửi (Sender)",
+      "Tài khoản nhận",
+      "Ngân hàng / Cổng",
+      "Thời gian nhận webhook",
       "Dữ liệu gốc (JSON)"
     ]);
     sheet.getRange("A1:I1").setFontWeight("bold").setBackground("#e0f2fe"); // Tiêu đề xanh dương nhạt sang trọng
@@ -1542,7 +1572,7 @@ function saveToTransactionSheet(ss, postData, rawContents) {
 
   for (var j = 0; j < transactions.length; j++) {
     var tx = transactions[j];
-    
+
     // Chống trùng lặp theo Mã giao dịch (ID/Ref)
     var isDuplicate = false;
     if (lastRow > 1 && tx.id) {
@@ -1585,7 +1615,7 @@ function saveToTransactionSheet(ss, postData, rawContents) {
  */
 function parseSingleTransaction(item) {
   if (!item || typeof item !== "object") return {};
-  
+
   var time = item.when || item.transactionDate || item.transactionDateTime || item.transactionTime || item.date || item.time || "";
   var id = item.tid || item.referenceCode || item.reference || item.id || item.orderCode || item.transactionId || "";
   var amount = Number(item.amount || item.money || item.sotien || 0);
@@ -1615,15 +1645,15 @@ function syncGVCNWithTransactionCN(ss) {
   var gvcnSheet = ss.getSheetByName("GVCN");
   var txSheet = ss.getSheetByName("transactioncn");
   if (!gvcnSheet) return;
-  
+
   var gvcnLastRow = gvcnSheet.getLastRow();
   if (gvcnLastRow < 2) return;
-  
+
   // Đọc danh sách học sinh hiện tại từ GVCN
   // Cột D (cột số 4) là Mã HS, Cột E (cột số 5) là Số tiền nộp
   var gvcnRange = gvcnSheet.getRange(2, 1, gvcnLastRow - 1, 7);
   var gvcnData = gvcnRange.getValues();
-  
+
   // Đọc dữ liệu giao dịch từ transactioncn
   var txData = [];
   if (txSheet) {
@@ -1632,24 +1662,24 @@ function syncGVCNWithTransactionCN(ss) {
       txData = txSheet.getRange(2, 1, txLastRow - 1, 7).getValues();
     }
   }
-  
+
   // Duyệt qua từng học sinh trong GVCN để tìm số tiền giao dịch mới nhất
   var updatedAmounts = [];
   var updatedTotal = [];
   var hasChanged1 = false;
   var hasChanged2 = false;
-  
+
   for (var i = 0; i < gvcnData.length; i++) {
     var studentCode = String(gvcnData[i][3]).trim(); // Mã HS (Cột D)
     var currentPaid = Number(gvcnData[i][4]) || 0; // Cột E hiện tại
     var totalPaid = Number(gvcnData[i][6]) || 0; // Cột G hiện tại
     var foundAmount = 0;
-    
+
     if (studentCode !== "") {
       // Duyệt từ dưới lên trong txData (từ giao dịch mới nhất đến cũ nhất)
       for (var j = txData.length - 1; j >= 0; j--) {
         var description = String(txData[j][6] || "").trim(); // Mô Tả (Cột G)
-        
+
         // Kiểm tra xem mô tả có chứa mã HS không
         if (description.toUpperCase().indexOf(studentCode.toUpperCase()) !== -1) {
           foundAmount = Number(txData[j][3]) || 0; // Số Tiền (Cột D)
@@ -1657,19 +1687,19 @@ function syncGVCNWithTransactionCN(ss) {
         }
       }
     }
-    
+
     if (foundAmount !== currentPaid) {
       hasChanged1 = true;
-    } 
-    var newTotalPaid = totalPaid;  
+    }
+    var newTotalPaid = totalPaid;
     if (currentPaid === 0 && foundAmount !== currentPaid) {
-     hasChanged2 = true;
-     newTotalPaid = totalPaid + foundAmount;
+      hasChanged2 = true;
+      newTotalPaid = totalPaid + foundAmount;
     }
     updatedAmounts.push([foundAmount]);
     updatedTotal.push([newTotalPaid]);
   }
-  
+
   // Chỉ ghi ngược lại cột E (Số tiền nộp) của sheet GVCN nếu có sự thay đổi để tránh lãng phí ghi dữ liệu
   if (hasChanged1 && updatedAmounts.length > 0) {
     gvcnSheet.getRange(2, 5, updatedAmounts.length, 1).setValues(updatedAmounts);
@@ -1682,7 +1712,7 @@ function syncGVCNWithTransactionCN(ss) {
   }
 }
 /**
- * 2007Them: Đồng bộ tự động dữ liệu từ sheet transactionkd sang sheet ThuTien
+ * Đồng bộ tự động dữ liệu từ sheet transactionkd sang sheet ThuTien
  */
 function syncThuTienWithTransactionKD(ss) {
   var thhtSheet = ss.getSheetByName("THHT");
@@ -1749,15 +1779,15 @@ function syncThuTienWithTransactionKD(ss) {
     var codeMatch = desc.match(/HT\d+/i);
     if (codeMatch) {
       var codeHS = codeMatch[0].toUpperCase();
-      
+
       if (studentMap[codeHS]) {
         var student = studentMap[codeHS];
-        
+
         var lanMatch = desc.match(/L\d+/i);
         var lanNop = lanMatch ? lanMatch[0].toUpperCase() : "L1";
-        
+
         var uniqueKey = codeHS + "_" + lanNop;
-        
+
         if (!existingKeys[uniqueKey]) {
           var dateStr = "";
           if (dateVal instanceof Date) {
@@ -1778,7 +1808,7 @@ function syncThuTienWithTransactionKD(ss) {
             amount,
             codeHS
           ]);
-          
+
           existingKeys[uniqueKey] = true;
         }
       }
@@ -1795,20 +1825,20 @@ function syncThuTienWithTransactionKD(ss) {
 }
 
 /**
- * 2107them: Tự động đồng bộ và cập nhật trạng thái bản quyền của giáo viên từ sheet transactioncn sang sheet banquyen
+ * Tự động đồng bộ và cập nhật trạng thái bản quyền của giáo viên từ sheet transactioncn sang sheet banquyen
  */
 function syncLicenseWithTransactionCN(ss) {
   var bqSheet = ss.getSheetByName("banquyen");
   if (!bqSheet) {
     bqSheet = ss.insertSheet("banquyen");
-    bqSheet.appendRow(["idgv", "Fullname", "pass", "mon", "idmon", "bản quyền", "link script"]);
-    bqSheet.getRange("A1:G1").setFontWeight("bold").setBackground("#e0f2fe");
+    bqSheet.appendRow(["idgv", "Fullname", "pass", "mon", "idmon", "bản quyền", "link script", "level", "Ngày đk", "Ngày hết hạn"]);
+    bqSheet.getRange("A1:J1").setFontWeight("bold").setBackground("#e0f2fe");
   }
 
   var bqLastRow = bqSheet.getLastRow();
   if (bqLastRow < 2) return;
 
-  var bqRange = bqSheet.getRange(2, 1, bqLastRow - 1, 7);
+  var bqRange = bqSheet.getRange(2, 1, bqLastRow - 1, 10);
   var bqData = bqRange.getValues();
 
   var txSheet = ss.getSheetByName("transactioncn");
@@ -1816,7 +1846,7 @@ function syncLicenseWithTransactionCN(ss) {
   if (txSheet) {
     var txLastRow = txSheet.getLastRow();
     if (txLastRow > 1) {
-      txData = txSheet.getRange(2, 1, txLastRow - 1, 7).getValues();
+      txData = txSheet.getRange(2, 1, txLastRow - 1, 10).getValues();
     }
   }
 
@@ -1828,11 +1858,11 @@ function syncLicenseWithTransactionCN(ss) {
 
     // Nếu chưa được kích hoạt vip
     if (idgv !== "" && license !== "vip") {
-      // Tìm số điện thoại idgv trong bất kỳ cột nào của transactioncn và so sánh số tiền trùng phibanquyen (500000)
+      // Tìm số điện thoại idgv trong bất kỳ cột nào của transactioncn và so sánh số tiền trùng phibanquyen (199000)
       for (var j = 0; j < txData.length; j++) {
         var txRow = txData[j];
         var amount = Number(txRow[3]) || 0; // Cột D (index 3) là Số Tiền
-        
+
         var isFound = false;
         // Duyệt qua tất cả cột của dòng giao dịch để tìm xem có chứa idgv không (thường nằm ở Mô tả cột G)
         for (var col = 0; col < txRow.length; col++) {
@@ -1842,9 +1872,22 @@ function syncLicenseWithTransactionCN(ss) {
           }
         }
 
-        if (isFound && amount === phibanquyen) {
+        if (isFound && String(amount).trim() === String(phibanquyen)) {
           bqData[i][5] = "vip";
           bqSheet.getRange(i + 2, 6).setValue("vip");
+
+          // 2307sua3: Ghi ngày đăng ký vào cột I (Cột 9) và ngày hết hạn sau 1 năm vào cột J (Cột 10)
+          var now2307 = new Date();
+          var timeZone2307 = Session.getScriptTimeZone() || "GMT+7";
+          var regDate2307Str = Utilities.formatDate(now2307, timeZone2307, "dd/MM/yyyy");
+          var expDate2307 = new Date(now2307.getFullYear() + 1, now2307.getMonth(), now2307.getDate());
+          var expDate2307Str = Utilities.formatDate(expDate2307, timeZone2307, "dd/MM/yyyy");
+
+          bqData[i][8] = regDate2307Str;
+          bqData[i][9] = expDate2307Str;
+          bqSheet.getRange(i + 2, 9).setValue(regDate2307Str);
+          bqSheet.getRange(i + 2, 10).setValue(expDate2307Str);
+
           updated = true;
           break; // Đã tìm thấy, chuyển sang GV tiếp theo
         }
