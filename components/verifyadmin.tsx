@@ -1,6 +1,6 @@
-export const URL_ADMIN = import.meta.env?.VITE_API_URL_ADMIN || "https://script.google.com/macros/s/AKfycbxU1gFzMDIzYbWxAh70658gBw6czUAhyhud7VqbZWMD1OYlZfqDR5M7W7wfxz831e3gXA/exec"; 
+export const URL_ADMIN = import.meta.env?.VITE_API_URL_ADMIN || "https://script.google.com/macros/s/AKfycbwlglx696Wr0BCj8SMAvwh1hlfFg66uemInbxI2W0TdE96wY67eZx_AAxxD5RJnl04NXg/exec"; 
 
-// 2107them / 2207sua3: Xác thực tài khoản giáo viên qua sheet banquyen
+// 2107them / 2207sua3 / 2307sua1: Xác thực tài khoản giáo viên qua sheet banquyen (thử cả sheetLink và URL_ADMIN)
 export const verifyBanquyen = async (
   sheetLink: string, 
   idgv: string,
@@ -21,83 +21,104 @@ export const verifyBanquyen = async (
   if (!idgv.trim()) return { success: false, message: "Số điện thoại IDGV không được để trống!" };
   if (!password.trim()) return { success: false, message: "Mật khẩu không được để trống!" };
   
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  // 2307them1: Danh sách các URL thử xác thực
+  const targetUrls = Array.from(new Set([sheetLink, URL_ADMIN].filter(Boolean)));
+  let lastResult = { success: false, message: "Không thể kết nối đến máy chủ xác thực!" };
 
-  try {
-    const response = await fetch(sheetLink, {
-      method: 'POST',
-      signal: controller.signal,
-      body: JSON.stringify({
-        action: 'checkBanquyen',
-        idgv: idgv,
-        password: password
-      })
-    });
-    
-    clearTimeout(timeoutId);
+  for (const url of targetUrls) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    if (!response.ok) return { success: false, message: "Lỗi kết nối Server mạng!" };
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        signal: controller.signal,
+        body: JSON.stringify({
+          action: 'checkBanquyen',
+          idgv: idgv,
+          password: password
+        })
+      });
+      
+      clearTimeout(timeoutId);
 
-    const result = await response.json();
-    return {
-      success: result && result.success === true,
-      message: result && result.message ? result.message : "Không có phản hồi từ hệ thống!",
-      idgv: result?.idgv,
-      fullname: result?.fullname,
-      mon: result?.mon,
-      idmon: result?.idmon,
-      licenseStatus: result?.licenseStatus,
-      linkScript: result?.linkScript,
-      level: result?.level, // 2207them3
-      hetHan: result?.hetHan, // 2207them3
-      checkBanquyen: result?.checkBanquyen // 2207them3
-    };
-
-  } catch (err) {
-    clearTimeout(timeoutId);
-    console.error("Lỗi xác thực bản quyền:", err);
-    return { success: false, message: "Hệ thống bận hoặc kết nối bị ngắt!" };
+      if (response.ok) {
+        const result = await response.json();
+        if (result && result.success) {
+          return {
+            success: true,
+            message: result.message || "Xác thực thành công!",
+            idgv: result?.idgv,
+            fullname: result?.fullname,
+            mon: result?.mon,
+            idmon: result?.idmon,
+            licenseStatus: result?.licenseStatus,
+            linkScript: result?.linkScript,
+            level: result?.level,
+            hetHan: result?.hetHan,
+            checkBanquyen: result?.checkBanquyen
+          };
+        } else if (result) {
+          lastResult = {
+            success: false,
+            message: result.message || "Số điện thoại IDGV hoặc mật khẩu không chính xác!"
+          };
+        }
+      }
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.error("2307sua1: Lỗi xác thực bản quyền tới", url, err);
+    }
   }
+
+  return lastResult;
 };
 
-// 2107them: Cập nhật link script cho giáo viên
+// 2107them / 2307sua1: Cập nhật link script cho giáo viên vào cột G
 export const updateLinkScriptOnSheet = async (
   sheetLink: string,
   idgv: string,
   password: string,
   newLinkScript: string
 ): Promise<{ success: boolean; message: string }> => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  // 2307them1: Thử đồng bộ cột G lên cả URL_ADMIN và sheetLink của giáo viên
+  const targetUrls = Array.from(new Set([URL_ADMIN, sheetLink].filter(Boolean)));
+  let lastResult = { success: false, message: "Cập nhật link script thất bại!" };
 
-  try {
-    const response = await fetch(sheetLink, {
-      method: 'POST',
-      signal: controller.signal,
-      body: JSON.stringify({
-        action: 'updateLinkScript',
-        idgv: idgv,
-        password: password,
-        linkScript: newLinkScript
-      })
-    });
-    
-    clearTimeout(timeoutId);
+  for (const url of targetUrls) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    if (!response.ok) return { success: false, message: "Lỗi kết nối Server mạng!" };
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        signal: controller.signal,
+        body: JSON.stringify({
+          action: 'updateLinkScript',
+          idgv: idgv,
+          password: password,
+          linkScript: newLinkScript
+        })
+      });
+      
+      clearTimeout(timeoutId);
 
-    const result = await response.json();
-    return {
-      success: result && result.success === true,
-      message: result && result.message ? result.message : "Cập nhật thất bại!"
-    };
-
-  } catch (err) {
-    clearTimeout(timeoutId);
-    console.error("Lỗi cập nhật link script:", err);
-    return { success: false, message: "Lỗi kết nối mạng khi cập nhật link script!" };
+      if (response.ok) {
+        const result = await response.json();
+        if (result && result.success) {
+          lastResult = {
+            success: true,
+            message: result.message || "Cập nhật Link Script vào cột G thành công!"
+          };
+        }
+      }
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.error("2307sua1: Lỗi cập nhật link script tới", url, err);
+    }
   }
+
+  return lastResult;
 };
 
 export const verifyAdminPassword = async (
