@@ -20,15 +20,17 @@ import {
   Check,
   Download,
   Flame,
-  ClipboardList
+  ClipboardList,
+  Lock
 } from 'lucide-react';
 
 interface SidebarProps {
   currentView: ViewMode;
   setView: (view: ViewMode) => void;
+  hasSheetLink?: boolean; // 2307them2
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, hasSheetLink = true }) => {
   const showGiftButton = false;
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
   const [giftTab, setGiftTab] = useState<'coffee' | 'milktea' | 'custom'>('coffee');
@@ -38,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   const menuItems = [
     { id: ViewMode.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard },
     { id: ViewMode.IMPORT, label: 'Nhập danh sách HT', icon: UserPlus },
-    { id: ViewMode.GVCN, label: 'Danh sách lớp GVCN', icon: ClipboardList }, // 1807Them2
+    { id: ViewMode.GVCN, label: 'Danh sách lớp GVCN', icon: ClipboardList },
     { id: ViewMode.LIST, label: 'Xem danh sách HT', icon: ListOrdered },    
     { id: ViewMode.ATTENDANCE, label: 'Điểm danh HT', icon: CheckSquare },
     { id: ViewMode.QRCODE, label: 'QR nộp tiền HT', icon: QrCode },
@@ -47,6 +49,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     { id: ViewMode.GEMINI_AI, label: 'Trợ lý Gemini', icon: Sparkles },
     { id: ViewMode.SETTINGS, label: 'Settings', icon: Settings },    
   ];
+
+  // 2307sua2: Xử lý chuyển tab - Khóa các chức năng nếu không có Link Script
+  const handleItemClick = (id: ViewMode) => {
+    if (!hasSheetLink && id !== ViewMode.DASHBOARD && id !== ViewMode.SETTINGS) {
+      alert("Chưa có Link Script Google Apps Script! Thầy/Cô chỉ có thể xem trang Dashboard. Vui lòng nhập Link Script ở mục Cấu hình (Settings) hoặc xác thực tài khoản giáo viên để mở khóa các chức năng khác.");
+      return;
+    }
+    setView(id);
+  };
 
   // Hàm sao chép nhanh
   const handleCopy = (text: string, type: 'stk' | 'nd') => {
@@ -94,18 +105,27 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
+          const isLocked = !hasSheetLink && item.id !== ViewMode.DASHBOARD && item.id !== ViewMode.SETTINGS;
+
           return (
             <button
               key={item.id}
-              onClick={() => setView(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 ${
+              onClick={() => handleItemClick(item.id)}
+              className={`w-full flex items-center justify-between px-3 py-3 rounded-lg transition-all duration-200 ${
                 isActive 
                   ? 'bg-indigo-50 text-indigo-600 font-medium shadow-sm border border-indigo-100' 
+                  : isLocked
+                  ? 'text-slate-400 hover:bg-slate-50 cursor-not-allowed opacity-75'
                   : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
               }`}
             >
-              <Icon size={22} />
-              <span className="hidden md:block text-sm">{item.label}</span>
+              <div className="flex items-center gap-3">
+                <Icon size={22} />
+                <span className="hidden md:block text-sm">{item.label}</span>
+              </div>
+              {isLocked && (
+                <Lock size={14} className="text-amber-500 hidden md:block" title="Khóa: Cần cài đặt Link Script" />
+              )}
             </button>
           );
         })}
@@ -212,7 +232,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                     }`}
                   >
                     <Coffee size={14} />
-                    Ly Cafe (50K)
+                    Ly Cafe (20K)
                   </button>
                   <button
                     onClick={() => setGiftTab('milktea')}
@@ -223,7 +243,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                     }`}
                   >
                     <Heart size={14} />
-                    Trà Sữa (100K)
+                    Trà Sữa (50K)
                   </button>
                   <button
                     onClick={() => setGiftTab('custom')}
@@ -234,7 +254,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                     }`}
                   >
                     <Flame size={14} />
-                    Ủng Hộ Tùy Chọn
+                    Ủng Hộ Tự Do
                   </button>
                 </div>
 
@@ -257,7 +277,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                   {((giftTab === 'coffee') || (giftTab === 'milktea') || (giftTab === 'custom' && customGiftAmount > 0)) ? (
                     <div className="relative p-2 bg-white border border-slate-200 rounded-2xl shadow-md overflow-hidden flex items-center justify-center">
                       <img
-                        src={getGiftQrUrl(giftTab === 'coffee' ? 50000 : giftTab === 'milktea' ? 100000 : customGiftAmount)}
+                        src={getGiftQrUrl(giftTab === 'coffee' ? 20000 : giftTab === 'milktea' ? 50000 : customGiftAmount)}
                         alt="Ủng hộ tác giả SmartEdu"
                         className="w-48 h-48 object-contain"
                         referrerPolicy="no-referrer"
@@ -275,7 +295,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                     <p className="text-[10px] text-slate-400 font-bold uppercase">Mệnh giá quét</p>
                     <p className="text-base font-black text-slate-800">
                       {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
-                        giftTab === 'coffee' ? 50000 : giftTab === 'milktea' ? 100000 : customGiftAmount
+                        giftTab === 'coffee' ? 20000 : giftTab === 'milktea' ? 50000 : customGiftAmount
                       )}
                     </p>
                   </div>
@@ -284,8 +304,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                   {((giftTab === 'coffee') || (giftTab === 'milktea') || (giftTab === 'custom' && customGiftAmount > 0)) && (
                     <button
                       onClick={() => downloadGiftQR(
-                        giftTab === 'coffee' ? 50000 : giftTab === 'milktea' ? 100000 : customGiftAmount,
-                        giftTab === 'coffee' ? 'Cafe_50K' : giftTab === 'milktea' ? 'Tra_Sua_100K' : 'Tuy_Tam'
+                        giftTab === 'coffee' ? 20000 : giftTab === 'milktea' ? 50000 : customGiftAmount,
+                        giftTab === 'coffee' ? 'Cafe_20K' : giftTab === 'milktea' ? 'Tra_Sua_50K' : 'Tuy_Tam'
                       )}
                       className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-extrabold text-xs rounded-xl shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
                     >
