@@ -96,7 +96,7 @@ const ListSection: React.FC<ListSectionProps> = ({ data }) => {
     }
   };
 
-  // 2207sua2: Hàm xử lý xóa một học sinh chuẩn hóa, tách biệt logic API và đồng bộ Cloud
+  // Hàm xử lý xóa một học sinh chuẩn hóa, tách biệt logic API và đồng bộ Cloud
   const handleDeleteStudent = async (studentName: string, phoneNumber: string, studentCode: string) => {
     const inputPassword = window.prompt(`NHẬP MẬT KHẨU ADMIN Ô C2 ĐỂ XÓA HỌC SINH: ${studentName.toUpperCase()}`);
     if (inputPassword === null) return;
@@ -109,7 +109,7 @@ const ListSection: React.FC<ListSectionProps> = ({ data }) => {
     if (!confirmDel) return;
 
     // Ưu tiên dùng code để quản lý trạng thái loading của nút bấm cho đồng bộ
-    const uniqueKey = studentCode ? studentCode.trim() : ''; // 1807Sua
+    const uniqueKey = studentCode ? studentCode.trim() : '';
     setIsDeleting(uniqueKey);
 
     let isSuccess = false;
@@ -142,7 +142,7 @@ const ListSection: React.FC<ListSectionProps> = ({ data }) => {
       setIsDeleting(null);
     }
 
-    // 2207them2: Tách riêng bước làm mới dữ liệu sau khi xóa thành công để tránh báo lỗi giả
+    // Tách riêng bước làm mới dữ liệu sau khi xóa thành công để tránh báo lỗi giả
     if (isSuccess) {
       try {
         if (onRefreshData) {
