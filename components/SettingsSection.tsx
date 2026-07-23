@@ -40,7 +40,7 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
     try {
       if (data.sheetLink) {
         // 2107sua: Xác thực qua API banquyen trên Google Sheets
-        const result = await verifyBanquyen(data.sheetLink, idgv, password);
+        const result = await verifyBanquyen(URL_ADMIN, idgv, password);
         
         if (result.success) {
           setIsAuthorized(true);
