@@ -36,10 +36,10 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
       return;
     }
 
-    const inputIdgv = prompt("Nhập Số điện thoại IDGV đã đăng ký bản quyền:", data.idgv || "") || "";
+    const inputIdgv = prompt("Nhập Số điện thoại IDGV đã đăng ký:", data.idgv || "") || "";
     if (!inputIdgv.trim()) return;
 
-    const inputPass = prompt("Nhập Mật khẩu bản quyền Giáo viên:") || "";
+    const inputPass = prompt("Nhập Mật khẩu tài khoản Giáo viên:") || "";
     if (!inputPass.trim()) return;
 
     try {
@@ -72,7 +72,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
       }
     } catch (err) {
       console.error(err);
-      alert("Lỗi kết nối khi xác minh bản quyền!");
+      alert("Lỗi kết nối khi xác minh tài khoản!");
     }
   };
   
@@ -292,7 +292,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
         className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all text-xs font-bold"
         title="Nhấp để xác minh bản quyền đã đăng ký"
       >
-        Xác minh
+        Tài khoản
       </button>
     </div>
   )
