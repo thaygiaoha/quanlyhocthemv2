@@ -4,7 +4,7 @@
  * GOOGLE APPS SCRIPT - PHIÊN BẢN CẬP NHẬT PHÍ & PASS
  */
 
-var SPREADSHEET_ID = "11yDgsUC89JTQoxPLd8J6u4JD3F7joymzl6ky0SL9h0E";
+var SPREADSHEET_ID = "1OiSvTPGmhmVsNA_VszzCvYMlxt52Dgx86U4kf_2FMfc";
 var maxrowhs = 101;
 var phibanquyen = 199000;
 
@@ -42,7 +42,7 @@ function doGet(e) {
       if (bqLastRow > 1) {
         var bqVals = bqSheet.getRange(2, 1, bqLastRow - 1, 7).getValues();
         for (var idx = 0; idx < bqVals.length; idx++) {
-          if (String(bqVals[idx][0]).trim() === idgvParam) {
+          if (isEqual(bqVals[idx][0], idgvParam)) {
             resultData.licenseStatus = String(bqVals[idx][5]).trim();
             resultData.fullname = String(bqVals[idx][1]).trim();
             resultData.mon = String(bqVals[idx][3]).trim();
@@ -230,7 +230,7 @@ function doPost(e) {
     var adminSheet = ss.getSheetByName("hocphi");
     var passAdmin = adminSheet ? String(adminSheet.getRange("C2").getValue()).trim() : "12345@";
 
-    if (String(inputPassword).trim() !== passAdmin) {
+    if (!isEqualExact(inputPassword, passAdmin)) {
       return ContentService.createTextOutput(JSON.stringify({
         success: false,
         message: "Mật khẩu Admin không chính xác!"
@@ -289,7 +289,7 @@ function doPost(e) {
     var adminSheet = ss.getSheetByName("hocphi");
     var passAdmin = adminSheet ? String(adminSheet.getRange("C2").getValue()).trim() : "12345@";
 
-    if (String(inputPassword).trim() !== passAdmin) {
+    if (!isEqualExact(inputPassword, passAdmin)) {
       return ContentService.createTextOutput(JSON.stringify({
         success: false,
         message: "Mật khẩu Admin không chính xác!"
@@ -311,7 +311,7 @@ function doPost(e) {
     if (inputCode !== "") {
       for (var i = 1; i < vals.length; i++) {
         var existingCode = String(vals[i][3] || "").trim().toLowerCase(); // Cột D (Mã HS)
-        if (existingCode === inputCode) {
+        if (isEqual(existingCode, inputCode)) {
           return ContentService.createTextOutput(JSON.stringify({
             success: false,
             message: "Mã học sinh " + s.code + " đã tồn tại trong danh sách GVCN!"
@@ -348,7 +348,7 @@ function doPost(e) {
     var adminSheet = ss.getSheetByName("hocphi");
     var passAdmin = adminSheet ? String(adminSheet.getRange("C2").getValue()).trim() : "12345@";
 
-    if (String(inputPassword).trim() !== passAdmin) {
+     if (!isEqualExact(inputPassword, passAdmin)) {
       return ContentService.createTextOutput(JSON.stringify({
         success: false,
         message: "Mật khẩu Admin không chính xác!"
@@ -363,9 +363,9 @@ function doPost(e) {
     var foundIndex = -1;
 
     // Tìm theo code cũ (trước khi đổi)
-    var oldCode = String(postData.oldCode || s.code).trim().toLowerCase();
+    var oldCode = postData.oldCode || s.code || "";
     for (var i = 1; i < vals.length; i++) {
-      if (String(vals[i][3]).trim().toLowerCase() === oldCode) {
+      if (isEqual(vals[i][3], oldCode)) {
         foundIndex = i + 1;
         break;
       }
@@ -383,8 +383,8 @@ function doPost(e) {
     if (inputCode !== oldCode) {
       for (var i = 1; i < vals.length; i++) {
         if (i + 1 !== foundIndex) {
-          var existingCode = String(vals[i][3] || "").trim().toLowerCase();
-          if (existingCode === inputCode) {
+          var existingCode = vals[i][3] || "";
+          if (isEqual(existingCode, inputCode)) {
             return ContentService.createTextOutput(JSON.stringify({
               success: false,
               message: "Mã học sinh mới " + s.code + " đã trùng với học sinh khác!"
@@ -413,7 +413,7 @@ function doPost(e) {
     var adminSheet = ss.getSheetByName("hocphi");
     var passAdmin = adminSheet ? String(adminSheet.getRange("C2").getValue()).trim() : "12345@";
 
-    if (String(inputPassword).trim() !== passAdmin) {
+    if (!isEqualExact(inputPassword, passAdmin)) {
       return ContentService.createTextOutput(JSON.stringify({
         success: false,
         message: "Mật khẩu Admin không chính xác!"
@@ -423,12 +423,12 @@ function doPost(e) {
     var sheet = ss.getSheetByName("GVCN");
     if (!sheet) return createResponse("Lỗi: Không tìm thấy sheet GVCN", 404);
 
-    var code = String(postData.code || "").trim().toLowerCase();
+    var code = postData.code || "";
     var vals = sheet.getDataRange().getValues();
     var foundIndex = -1;
 
     for (var i = 1; i < vals.length; i++) {
-      if (String(vals[i][3]).trim().toLowerCase() === code) {
+      if (isEqual(vals[i][3], code)) {
         foundIndex = i + 1;
         break;
       }
@@ -465,7 +465,7 @@ function doPost(e) {
     var adminSheet = ss.getSheetByName("hocphi");
     var passAdmin = adminSheet ? String(adminSheet.getRange("C2").getValue()).trim() : "12345@";
 
-    if (String(inputPassword).trim() !== passAdmin) {
+    if (!isEqualExact(inputPassword, passAdmin)) {
       return ContentService.createTextOutput(JSON.stringify({
         success: false,
         message: "Mật khẩu Admin không chính xác!"
@@ -518,7 +518,7 @@ function doPost(e) {
     var adminSheet = ss.getSheetByName("hocphi");
     var passAdmin = adminSheet ? String(adminSheet.getRange("C2").getValue()).trim() : "12345@";
 
-    if (String(inputPassword).trim() !== passAdmin) {
+    if (!isEqualExact(inputPassword, passAdmin)) {
       return ContentService.createTextOutput(JSON.stringify({
         success: false,
         message: "Mật khẩu Admin không chính xác!"
@@ -617,17 +617,17 @@ function doPost(e) {
     }
 
     var vals = sheet.getDataRange().getValues();
-    var targetStt = String(postData.stt).trim();
-    var targetLan = String(postData.lanNop).trim();
-    var targetLop = String(postData.lop).trim();
-    var targetCode = String(postData.code).trim();
+    var targetStt = String(postData.stt || "").trim();
+    var targetLan = String(postData.lanNop || "").trim();
+    var targetLop = String(postData.lop || "").trim();
+    var targetCode = String(postData.code || "").trim();
     var foundIndex = -1;
 
     // Quét tìm học sinh theo lớp, lần nộp và 2 số đầu STT để chuẩn bị ghi đè
     for (var i = 1; i < vals.length; i++) {
-      var rowCode = String(vals[i][6]).trim();
+      var rowCode = vals[i][6];
 
-      if (rowCode === targetCode) {
+      if (isEqual(rowCode, targetCode)) {
         foundIndex = i + 1;
         break;
       }
@@ -664,12 +664,12 @@ function doPost(e) {
   if (action === "deleteStudent") {
     var targetSheetName = postData.className;
     var studentName = postData.studentName;
-    var code = String(postData.studentCode || "").trim();
+    var code = postData.studentCode || "";
     var inputPassword = postData.password;
 
     var adminSheet = ss.getSheetByName("hocphi");
     var passAdmin = adminSheet ? String(adminSheet.getRange("C2").getValue()).trim() : "";
-    if (!inputPassword || String(inputPassword).trim() !== String(passAdmin)) {
+    if (!inputPassword || !isEqualExact(inputPassword, passAdmin)) {
       return createResponse("Mật khẩu Admin không chính xác! Không thể xóa học sinh.", 403);
     }
 
@@ -682,7 +682,7 @@ function doPost(e) {
     // Tìm hàng chứa học sinh khớp tên và số điện thoại (chỉ quét bảng chính trước hàng maxrowhs - 1)
     for (var i = 1; i < values.length; i++) {
       if (i >= maxrowhs) break;
-      if (String(values[i][5]).trim() === code) {
+      if (isEqual(values[i][5], code)) {
         foundIndex = i + 1; // Đổi sang index của Sheet (1-based)
         break;
       }
@@ -741,9 +741,9 @@ function doPost(e) {
           var searchClassName = String(item.className).trim().toLowerCase();
 
           for (var i = 0; i < rangeA.length; i++) {
-            var rowClassName = String(rangeA[i][0] || "").trim().toLowerCase();
+            var rowClassName = rangeA[i][0] || "";
             // So sánh linh hoạt tên lớp (ví dụ: Lop10, Lop 10, Lớp 10)
-            if (rowClassName === searchClassName || rowClassName.replace(/\s+/g, '') === searchClassName.replace(/\s+/g, '')) {
+            if (isEqual(rowClassName, searchClassName)) {
               var newFee = Number(item.fee);
               if (!isNaN(newFee)) {
                 feeSheet.getRange(i + 1, 2).setValue(newFee);
@@ -794,13 +794,13 @@ function doPost(e) {
         message: "Số học sinh của " + sheetName + " đã đạt giới hạn tối đa maxrowhs - 1 nhé. Đề nghị tạo lớp mới " + sheetName + ".1 chẳng hạn!"
       })).setMimeType(ContentService.MimeType.JSON);
     }
-    var inputCode = String(s.code || "").trim().toLowerCase();
+    var inputCode = s.code || "";
     if (inputCode !== "") {
       // Duyệt qua tất cả các dòng hiện có học sinh để lọc trùng mã
       for (var i = 1; i < vals.length; i++) {
         if (vals[i][1] !== "" && vals[i][1] !== null) {
-          var existingCode = String(vals[i][5] || "").trim().toLowerCase();
-          if (existingCode === inputCode) {
+          var existingCode = vals[i][5] || "";
+          if (isEqual(existingCode, inputCode)) {
             return ContentService.createTextOutput(JSON.stringify({
               success: false,
               message: "Mã học sinh " + s.code + " đã tồn tại trong danh sách lớp " + sheetName
@@ -1035,7 +1035,7 @@ function doPost(e) {
     students.forEach(function (s) {
       for (var i = 1; i < values.length; i++) {
         if (i > maxrowhs) break; // Chỉ ghi vào bảng chính phía trên, không ghi vào lịch sử
-        if (String(values[i][5]) === String(s.code)) {
+        if (isEqual(values[i][5], s.code)) {
           sheet.getRange(i + 1, targetCol).setValue(s.isPresent ? 1 : 0);
           //sheet.getRange(i + 1, 17).setValue(s.totalAmount);
           break;
@@ -1055,7 +1055,7 @@ function doPost(e) {
     var adminSheet = ss.getSheetByName("hocphi");
     var passAdmin = adminSheet ? String(adminSheet.getRange("C2").getValue()).trim() : "";
 
-    if (inputPassword && String(inputPassword).trim() === String(passAdmin)) {
+    if (inputPassword && isEqualExact(inputPassword, passAdmin)) {
       // Trả về JSON có chứa success: true
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
@@ -1100,15 +1100,15 @@ function doPost(e) {
     var bqVals = bqSheet.getRange(2, 1, lastRow - 1, 7).getValues();
     for (var i = 0; i < bqVals.length; i++) {
       var row = bqVals[i];
-      var idgv = String(row[0]).trim();
+      var idgv = row[0] || "";
       var fullname = String(row[1]).trim();
-      var pass = String(row[2]).trim();
+      var pass = row[2] || "";
       var mon = String(row[3]).trim();
       var idmon = String(row[4]).trim();
       var license = String(row[5]).trim();
       var linkScript = String(row[6]).trim();
 
-      if (idgv === inputIdgv && pass === inputPass) {
+      if (isEqual(idgv, inputIdgv) && isEqualExact(pass, inputPass)) {
         return ContentService.createTextOutput(JSON.stringify({
           success: true,
           message: "Xác thực bản quyền thành công!",
@@ -1130,8 +1130,8 @@ function doPost(e) {
 
   // 2307sua2: Cập nhật link script cho giáo viên vào cột G (Cột 7) sheet banquyen trên Google Sheet Admin
   if (action === "updateLinkScript") {
-    var inputIdgv = String(postData.idgv || "").trim();
-    var inputPass = String(postData.password || "").trim();
+    var inputIdgv = postData.idgv || "";
+    var inputPass = postData.password || "";
     var newLinkScript = String(postData.linkScript || "").trim();
 
     var bqSheet = ss.getSheetByName("banquyen");
@@ -1153,11 +1153,11 @@ function doPost(e) {
     var bqVals = bqSheet.getRange(2, 1, lastRow - 1, 7).getValues();
     for (var i = 0; i < bqVals.length; i++) {
       var row = bqVals[i];
-      var idgv = String(row[0]).trim();
-      var pass = String(row[2]).trim();
+      var idgv = row[0];
+      var pass = row[2];
 
       // 2307sua2: Khớp số điện thoại IDGV (và mật khẩu khớp hoặc linh hoạt nếu mật khẩu rỗng khi đồng bộ)
-      if (idgv === inputIdgv && (pass === inputPass || !inputPass || inputPass === "")) {
+      if (isEqual(idgv, inputIdgv) && (isEqualExact(pass, inputPass) || !inputPass || inputPass === "")) {
         bqSheet.getRange(i + 2, 7).setValue(newLinkScript);
         SpreadsheetApp.flush();
         return ContentService.createTextOutput(JSON.stringify({
@@ -1178,7 +1178,7 @@ function doPost(e) {
     var inputPassword = postData.password;
     var adminSheet = ss.getSheetByName("hocphi");
     var passAdmin = adminSheet ? String(adminSheet.getRange("C2").getValue()).trim() : "";
-    if (!inputPassword || String(inputPassword).trim() !== String(passAdmin)) {
+    if (!inputPassword || !isEqualExact(inputPassword, passAdmin)) {
       return createResponse("Mật khẩu Admin không chính xác! Không thể reset lớp.", 403);
     }
     var sheet = ss.getSheetByName(targetSheetName);
@@ -1208,7 +1208,7 @@ function doPost(e) {
     var adminSheet = ss.getSheetByName("hocphi");
     var passAdmin = adminSheet ? String(adminSheet.getRange("C2").getValue()).trim() : "";
 
-    if (!inputPassword || String(inputPassword).trim() !== String(passAdmin)) {
+    if (!inputPassword || !isEqualExact(inputPassword, passAdmin)) {
       return createResponse("Mật khẩu Admin không chính xác! Không thể reset lớp.", 403);
     }
 
@@ -1240,7 +1240,7 @@ function doPost(e) {
 
     // Duyệt ngược từ hàng cuối cùng lên hàng số 2 (tránh hàng tiêu đề) để xóa
     for (var i = lastRow - 1; i >= 1; i--) {
-      var cellClassValue = String(values[i][3] || "").trim(); // Cột D (index 3) là cột Lớp
+      var cellClassValue = values[i][3] || ""; // Cột D (index 3) là cột Lớp
 
       // Lấy số khối của lớp trong ô tính (Ví dụ: "09A1" -> tách lấy "09", "12A2" -> tách lấy "12")
       var cellDigitMatch = cellClassValue.match(/\d+/);
@@ -1248,7 +1248,7 @@ function doPost(e) {
         var cellPrefix = String(cellDigitMatch[0]).padStart(2, '0');
 
         // So sánh đối chiếu: "09" === "09" hoặc "12" === "12"
-        if (cellPrefix === matchPrefix) {
+        if (isEqual(cellPrefix, matchPrefix)) {
           sheet.deleteRow(i + 1); // i trong mảng chạy từ 0, dòng trong sheet chạy từ 1
           deletedCount++;
         }
@@ -1321,9 +1321,9 @@ function getHocPhiTheoLop(ss, className) {
 
     // Duyệt qua từng hàng trong sheet hocphi để khớp tên lớp
     for (var i = 0; i < data.length; i++) {
-      var currentClassName = String(data[i][0]).trim().toLowerCase();
-      if (currentClassName === searchName) {
-        var price = Number(data[i][1]);
+      var currentClassName = data[i][0] || "";
+      if (isEqual(currentClassName, searchName)) {
+        var price = Number(data[i][1] || 0);
         return !isNaN(price) && price > 0 ? price : 60000;
       }
     }
@@ -1370,7 +1370,7 @@ function capNhatHocPhiSauDiemDanh(className, ssParam) {
     countHS++;
     // Quét các cột từ G đến P của hàng hiện tại
     for (var c = startColIdx; c <= endColIdx; c++) {
-      if (Number(dsdiemdanh[r][c]) === 1) {
+      if (Number(dsdiemdanh[r][c] || 0) === 1) {
         soBuoiDiHoc++;
       }
     }
@@ -1578,7 +1578,8 @@ function saveToTransactionSheet(ss, postData, rawContents) {
     if (lastRow > 1 && tx.id) {
       var existingIds = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
       for (var r = 0; r < existingIds.length; r++) {
-        if (String(existingIds[r][0]).trim().toUpperCase() === String(tx.id).trim().toUpperCase()) {
+        var key = existingIds[r][0] || "";
+        if (isEqual(key, tx.id)) {
           isDuplicate = true;
           break;
         }
@@ -1872,7 +1873,7 @@ function syncLicenseWithTransactionCN(ss) {
           }
         }
 
-        if (isFound && String(amount).trim() === String(phibanquyen)) {
+        if (isFound && isEqual(amount, phibanquyen)) {
           bqData[i][5] = "vip";
           bqSheet.getRange(i + 2, 6).setValue("vip");
 
@@ -1898,4 +1899,35 @@ function syncLicenseWithTransactionCN(ss) {
   if (updated) {
     SpreadsheetApp.flush();
   }
+}
+
+/**
+ * Chuẩn hóa chuỗi: Chuyển về String, trim khoảng trắng thừa, xóa khoảng trắng kép
+ */
+function cleanStr(val) {
+  if (val === null || val === undefined) return "";
+  return String(val).trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * So sánh 2 giá trị an toàn: Đưa về chuỗi, bỏ khoảng trắng và không phân biệt hoa/thường
+ */
+function isEqual(val1, val2) {
+  return cleanStr(val1).toLowerCase() === cleanStr(val2).toLowerCase();
+}
+
+/**
+ * So sánh an toàn không loại bỏ khoảng trắng bên trong (dùng cho Mật khẩu)
+ */
+function isEqualExact(val1, val2) {
+  if (val1 === null || val1 === undefined || val2 === null || val2 === undefined) return false;
+  return String(val1).trim() === String(val2).trim();
+}
+
+/**
+ * Chuyển đổi sang số an toàn, tránh bị NaN
+ */
+function safeNumber(val, defaultVal) {
+  var num = Number(val);
+  return isNaN(num) ? (defaultVal || 0) : num;
 }
