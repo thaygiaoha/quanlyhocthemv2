@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ViewMode, AppData } from './types';
 import { getAppData, saveAppData } from './services/storage';
-import { Users, RefreshCw } from 'lucide-react';
+import { Users, RefreshCw, Search } from 'lucide-react';
+import { lookupTeacherByIDGV } from './components/verifyadmin';
 
 // Components
 import Sidebar from './components/Sidebar';
@@ -185,17 +186,56 @@ const App: React.FC = () => {
     }
   };
 
+  const handleStudentLookupIDGV = async () => {
+    const inputIdgv = prompt("TRA CỨU DỮ LIỆU LỚP HỌC THEO IDGV (Số điện thoại Thầy/Cô):\nNhập IDGV Giáo viên:", data.idgv || "");
+    if (!inputIdgv || !inputIdgv.trim()) return;
+
+    try {
+      const res = await lookupTeacherByIDGV(inputIdgv.trim());
+      if (res.success && res.linkScript) {
+        const updatedData: AppData = {
+          ...data,
+          idgv: res.idgv || inputIdgv.trim(),
+          fullname: res.fullname || data.fullname,
+          mon: res.mon || data.mon,
+          idmon: res.idmon || data.idmon,
+          licenseStatus: res.licenseStatus || data.licenseStatus,
+          linkScript: res.linkScript,
+          sheetLink: res.linkScript
+        };
+        handleUpdateData(updatedData);
+        await refreshDataFromCloud(res.linkScript, true);
+        alert(`Thành công! Đã kết nối dữ liệu Lớp học của Giáo viên: ${res.fullname || inputIdgv} (${res.mon || 'Môn học'})!`);
+      } else {
+        alert(res.message || `Không tìm thấy IDGV: ${inputIdgv}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi kết nối khi tra cứu IDGV!");
+    }
+  };
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <Sidebar currentView={view} setView={setView} hasSheetLink={hasSheetLink} />
       
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
-        <header className="mb-8 flex items-center justify-between">
+        <header className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800">SmartEdu Pro</h1>
             <p className="font-bold text-blue-700">Tác giả: Nguyễn Văn Hà - THPT Yên Dũng số 2 - Bắc Ninh. Liên hệ: 0988.948.882</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+             {/* Nút Tra cứu IDGV dành cho Học sinh */}
+             <button
+               onClick={handleStudentLookupIDGV}
+               className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
+               title="Nhập IDGV của Giáo viên để Học sinh/Phụ huynh xem dữ liệu lớp học tương ứng"
+             >
+               <Search size={14} className="text-emerald-600" />
+               <span>Tra cứu IDGV HS/PH</span>
+             </button>
+
              {/* NÚT REFRESH CHỦ ĐỘNG TRÊN HEADER */}
              {data.sheetLink && (
                <button
@@ -209,14 +249,16 @@ const App: React.FC = () => {
                </button>
              )}
 
-             <div className="hidden md:block text-right">
-                <p className="text-sm font-medium text-slate-700">Trạng thái Google</p>
-                <p className={`text-xs font-mono ${data.sheetLink ? 'text-green-500' : 'text-amber-500'}`}>
-                  {data.sheetLink ? 'Đã kết nối Cloud' : 'Chưa có Link Script'}
+             <div className="hidden lg:block text-right border-l border-slate-200 pl-3">
+                <p className="text-xs font-bold text-slate-700">
+                  GV: <span className="text-indigo-600">{data.fullname || data.idgv || 'Admin'}</span>
+                </p>
+                <p className={`text-[11px] font-mono ${data.sheetLink ? 'text-emerald-600 font-bold' : 'text-amber-500'}`}>
+                  {data.sheetLink ? `IDGV: ${data.idgv || 'OK'}` : 'Chưa có Link Script'}
                 </p>
              </div>
-             <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-200">
-                <Users size={20} />
+             <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-200 shrink-0">
+                <Users size={18} />
              </div>
           </div>
         </header>
