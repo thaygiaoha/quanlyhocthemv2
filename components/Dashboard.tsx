@@ -29,6 +29,13 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) => {
   const [showQrModal, setShowQrModal] = useState(false);
+   const handleVip = async () => {
+    if (data.enableCopyrightCheck === false) {
+      alert("Hệ thống đang tắt kiểm tra bản quyền (Bật Chế độ Dùng miễn phí). Tất cả tính năng đều được sử dụng bình thường!");
+      return;
+    }
+    setShowQrModal(true)
+   };
   
   // 2307sua5: Hiển thị thông báo chi tiết tài khoản (Họ tên - Môn - Trạng thái: Free/Vip) hoặc báo chưa đăng ký tài khoản
   const handleVerifyLicense = async () => {
@@ -290,9 +297,9 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
       <span>Cấp độ Vip</span>
     </button>
   ) : (
-    <div className="flex items-center gap-1.5 shrink-0">
+    <div className="flex items-center gap-1.5 shrink-0"> 
       <button 
-        onClick={() => setShowQrModal(true)}
+        onClick={handleVip}
         className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 rounded-xl transition-all shrink-0 font-extrabold text-xs shadow-md shadow-amber-200"
       >
         <span>ĐK Vip</span>
