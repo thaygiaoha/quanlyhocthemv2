@@ -552,4 +552,4 @@ if (!isAuthorizedV) {
 };
 
 
-export default PaymentSection;
+export default PaymentHistorySection;
