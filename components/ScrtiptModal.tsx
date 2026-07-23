@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, Code, X, FileCode, Terminal, Sparkles, HelpCircle } from 'lucide-react';
+import { Copy, Check, X, FileCode, Sparkles, HelpCircle } from 'lucide-react';
 
 interface ScriptModalProps {
   isOpen: boolean;
