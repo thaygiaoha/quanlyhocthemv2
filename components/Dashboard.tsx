@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppData } from '../types';
-import { verifyBanquyen } from './verifyadmin'; // 2207them3
+import { verifyBanquyen } from './verifyadmin';
 import { 
   GraduationCap, 
   QrCode, 
@@ -20,7 +20,6 @@ import {
   Facebook, Youtube, Twitter, Send, UserPlus
 } from 'lucide-react';
 
-// 2107sua / 2207sua3: Thêm prop onRefreshData và xử lý bản quyền
 interface DashboardProps {
   data: AppData;  
   onUpdate: (data: AppData) => void;
@@ -29,15 +28,10 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) => {
   const [showQrModal, setShowQrModal] = useState(false);
-  // 2207sua3: Hàm xác minh bản quyền giáo viên từ sheet banquyen
+  
   const handleVerifyLicense = async () => {
     if (data.enableCopyrightCheck === false) {
       alert("Hệ thống đang tắt kiểm tra bản quyền (Chế độ Dùng thử miễn phí). Tất cả tính năng đều được sử dụng bình thường!");
-      return;
-    }
-
-    if (!data.sheetLink) {
-      alert("Chưa cấu hình liên kết Google Sheets để xác minh bản quyền! Vui lòng vào Cài đặt để cập nhật Web App URL.");
       return;
     }
 
@@ -48,8 +42,9 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
     if (!inputPass.trim()) return;
 
     try {
-      const res = await verifyBanquyen(data.sheetLink, inputIdgv, inputPass);
+      const res = await verifyBanquyen(inputIdgv, inputPass);
       if (res.success && res.licenseStatus === 'vip') {
+        const effectiveLink = res.linkScript || data.linkScript || data.sheetLink || "";
         const updatedData: AppData = {
           ...data,
           idgv: res.idgv || inputIdgv,
@@ -60,7 +55,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
           level: res.level || 'Vip',
           hetHan: res.hetHan || data.hetHan,
           checkBanquyen: res.checkBanquyen || 'vip',
-          linkScript: res.linkScript || data.linkScript
+          linkScript: effectiveLink,
+          sheetLink: effectiveLink || data.sheetLink
         };
         onUpdate(updatedData);
         alert(`Xác thực bản quyền VIP thành công!\nChào mừng Giáo viên: ${res.fullname || inputIdgv}\nCấp độ: ${res.level || 'VIP'}\nHạn sử dụng: ${res.hetHan || 'Vô thời hạn'}`);
@@ -92,20 +88,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
   isExternal: true,
   link: "https://smarteduv2.vercel.app?mode=register"
 },
-     {
-      title: "Tạo QR thu học phí tự động",
-      description: "Giải pháp chuyển khoản rảnh tay: Tự động quét thông tin từ Google Sheets hoặc file Excel để sinh mã QR VietQR kèm chính xác số tiền và cú pháp định danh của từng học sinh.",
-      features: ["Tích hợp VietQR chuẩn", "Tạo QR từ Excel", "Tạo QR từ Google sheet", "Bảo mật tài khoản", "Cần tích hợp VietQR hoặc nên dùng SePay(Dễ làm, không cần link)"],
-      icon: QrCode,
-      color: "from-pink-500 via-rose-500 to-amber-500",
-      shadow: "shadow-rose-100",
-      badge: "Tiện ích Pro",
-      customLinks: [
-        { label: "Tích hợp VietQR", url: "https://accounts.casso.vn/signup?returnTo=dYFr_6rDrHI99o0D0cq6Y" }, // Thầy thay link 1 ở đây
-        { label: "Tích hợp SePay", url: "https://sepay.vn?utm_source=INV&utm_medium=RFTRA&utm_campaign=E611D6B0" },  // Thầy thay link 2 ở đây
-        { label: "Tải code GAS", url: "https://docs.google.com/spreadsheets/d/1dX-yLVwsTeCDZZhII4xam_UQ4c6GipFYP7mQqHMaNrE/edit?usp=sharing" }  // Thầy thay link 2 ở đây
-      ]
-    },
 {
   title: "Kiểm tra bản quyền",
   description: "Xác minh trạng thái bản quyền phần mềm để đảm bảo hệ thống hoạt động ổn định.",
@@ -146,6 +128,20 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
       color: "from-blue-500 to-indigo-600",
       shadow: "shadow-blue-100",
       badge: "Phổ biến"
+    },
+    {
+      title: "Tạo QR thu học phí tự động",
+      description: "Giải pháp chuyển khoản rảnh tay: Tự động quét thông tin từ Google Sheets hoặc file Excel để sinh mã QR VietQR kèm chính xác số tiền và cú pháp định danh của từng học sinh.",
+      features: ["Tích hợp VietQR chuẩn", "Tạo QR từ Excel", "Tạo QR từ Google sheet", "Bảo mật tài khoản", "Cần tích hợp VietQR hay SePay(Dễ làm)"],
+      icon: QrCode,
+      color: "from-pink-500 via-rose-500 to-amber-500",
+      shadow: "shadow-rose-100",
+      badge: "Tiện ích Pro",
+      customLinks: [
+        { label: "Tích hợp VietQR", url: "https://accounts.casso.vn/signup?returnTo=dYFr_6rDrHI99o0D0cq6Y" }, // Thầy thay link 1 ở đây
+        { label: "Tích hợp SePay", url: "https://sepay.vn?utm_source=INV&utm_medium=RFTRA&utm_campaign=E611D6B0" },  // Thầy thay link 2 ở đây
+        { label: "Tải code GAS", url: "https://docs.google.com/spreadsheets/d/1dX-yLVwsTeCDZZhII4xam_UQ4c6GipFYP7mQqHMaNrE/edit?usp=sharing" }  // Thầy thay link 2 ở đây
+      ]
     },
     {
       title: "Chuyển đổi PDF/Img sang word Tex 99,99%",
@@ -226,7 +222,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
     <h4 className="text-base font-bold text-slate-800 tracking-tight group-hover:text-indigo-600 transition-colors">
       {app.title}
     </h4>
-    {/* 2207them3: Thông báo Dùng thử miễn phí bên cạnh chữ Kiểm tra bản quyền khi tắt bản quyền (false) */}
+    {/* Thông báo Dùng thử miễn phí bên cạnh chữ Kiểm tra bản quyền khi tắt bản quyền (false) */}
     {app.isLicenseCheck && data.enableCopyrightCheck === false && (
       <span className="px-2 py-0.5 text-[10px] font-extrabold bg-amber-100 text-amber-700 rounded-md shrink-0 border border-amber-200">
         Dùng thử miễn phí
@@ -271,7 +267,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
     </button>
   ))
 ) : app.isLicenseCheck ? (
-  /* 2207sua3: Nếu là vip và còn hạn sử dụng -> Nút 'Cấp độ Vip'. Nếu không phải Vip -> Nút 'ĐK Vip' (chuyển hướng https://smarteduv2.vercel.app?mode=dkvip) */
+  /* Nếu là vip và còn hạn sử dụng -> Nút 'Cấp độ Vip'. Nếu không phải Vip -> Nút 'ĐK Vip' */
   data.licenseStatus === 'vip' ? (
     <button 
       onClick={handleVerifyLicense}
