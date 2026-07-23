@@ -36,7 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   const [copiedText, setCopiedText] = useState<'stk' | 'nd' | null>(null);
 
   const menuItems = [
-    { id: ViewMode.DASHBOARD, label: 'Tổng quan', icon: LayoutDashboard },
+    { id: ViewMode.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard },
     { id: ViewMode.IMPORT, label: 'Nhập danh sách HT', icon: UserPlus },
     { id: ViewMode.GVCN, label: 'Danh sách lớp GVCN', icon: ClipboardList }, // 1807Them2
     { id: ViewMode.LIST, label: 'Xem danh sách HT', icon: ListOrdered },    
