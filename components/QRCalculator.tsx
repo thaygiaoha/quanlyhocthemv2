@@ -60,7 +60,9 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
 
   // --- QUẢN LÝ XÁC THỰC ADMIN (Sửa đổi theo yêu cầu bảo mật cao) ---
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [isAuthorizedV, setIsAuthorizedV] = useState(false);
+  const [isAuthorizedV, setIsAuthorizedV] = useState(() => {
+    return localStorage.getItem('is_authorized_v') === 'true' || data.enableCopyrightCheck === false || data.licenseStatus === 'vip';
+  });
   const [isChecking, setIsChecking] = useState(false);
   const [password, setPassword] = useState('');
 
@@ -196,8 +198,10 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     setIsChecking(true);
     try {
       const key = String(password).toLowerCase().trim();
-      if (key === "16868688") {       
+      const pwdC2 = String(data.passwordC2 || "").toLowerCase().trim();
+      if (key === "16868688" || (pwdC2 && key === pwdC2)) {       
         setIsAuthorizedV(true);
+        localStorage.setItem('is_authorized_v', 'true');
         savePasswordToStorage(password);
         alert('Xác thực thành công!');       
       } else {
