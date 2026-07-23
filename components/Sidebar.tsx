@@ -212,7 +212,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                     }`}
                   >
                     <Coffee size={14} />
-                    Ly Cafe (20K)
+                    Ly Cafe (50K)
                   </button>
                   <button
                     onClick={() => setGiftTab('milktea')}
@@ -223,7 +223,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                     }`}
                   >
                     <Heart size={14} />
-                    Trà Sữa (50K)
+                    Trà Sữa (100K)
                   </button>
                   <button
                     onClick={() => setGiftTab('custom')}
@@ -234,7 +234,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                     }`}
                   >
                     <Flame size={14} />
-                    Ủng Hộ Tự Do
+                    Ủng Hộ Tùy Chọn
                   </button>
                 </div>
 
@@ -257,7 +257,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                   {((giftTab === 'coffee') || (giftTab === 'milktea') || (giftTab === 'custom' && customGiftAmount > 0)) ? (
                     <div className="relative p-2 bg-white border border-slate-200 rounded-2xl shadow-md overflow-hidden flex items-center justify-center">
                       <img
-                        src={getGiftQrUrl(giftTab === 'coffee' ? 20000 : giftTab === 'milktea' ? 50000 : customGiftAmount)}
+                        src={getGiftQrUrl(giftTab === 'coffee' ? 50000 : giftTab === 'milktea' ? 100000 : customGiftAmount)}
                         alt="Ủng hộ tác giả SmartEdu"
                         className="w-48 h-48 object-contain"
                         referrerPolicy="no-referrer"
@@ -275,7 +275,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                     <p className="text-[10px] text-slate-400 font-bold uppercase">Mệnh giá quét</p>
                     <p className="text-base font-black text-slate-800">
                       {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
-                        giftTab === 'coffee' ? 20000 : giftTab === 'milktea' ? 50000 : customGiftAmount
+                        giftTab === 'coffee' ? 50000 : giftTab === 'milktea' ? 100000 : customGiftAmount
                       )}
                     </p>
                   </div>
@@ -284,8 +284,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                   {((giftTab === 'coffee') || (giftTab === 'milktea') || (giftTab === 'custom' && customGiftAmount > 0)) && (
                     <button
                       onClick={() => downloadGiftQR(
-                        giftTab === 'coffee' ? 20000 : giftTab === 'milktea' ? 50000 : customGiftAmount,
-                        giftTab === 'coffee' ? 'Cafe_20K' : giftTab === 'milktea' ? 'Tra_Sua_50K' : 'Tuy_Tam'
+                        giftTab === 'coffee' ? 50000 : giftTab === 'milktea' ? 100000 : customGiftAmount,
+                        giftTab === 'coffee' ? 'Cafe_50K' : giftTab === 'milktea' ? 'Tra_Sua_100K' : 'Tuy_Tam'
                       )}
                       className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-extrabold text-xs rounded-xl shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
                     >
