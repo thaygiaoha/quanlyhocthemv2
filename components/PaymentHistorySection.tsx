@@ -89,14 +89,13 @@ const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data, onUpdate, 
     );
   });
 
-  // 3. Tìm số Lần nộp (L) lớn nhất từ dữ liệu bên phải cột S-AI (historyBlocks) hoặc bản ghi ThuTien
+  // 3. Tìm số Lần nộp (L) lớn nhất (kết hợp cả từ Sheet ThuTien và cột S-AI lịch sử)
   const maxLanFromRecords = classRecords.reduce((max: number, r: any) => {
     const num = parseInt(String(r.lanNop).replace('L', ''), 10);
     return !isNaN(num) && num > max ? num : max;
-  }, 0);
+  }, 1);
 
   const maxLanFromBlocks = historyBlocks.length;
-  // Đảm bảo hiển thị ít nhất Lần 1 để học sinh luôn có bảng nhật ký và nút nộp học phí
   const maxLanNop = Math.max(maxLanFromRecords, maxLanFromBlocks, 1);
 
   // Tạo mảng tuần tự các đợt nộp: [1, 2, 3, ...]
@@ -536,22 +535,9 @@ if (!isAuthorizedV) {
           </div>
         </div>
       ) : (
-        /* CHẾ ĐỘ XEM 2: BẢNG NHẬT KÝ NỘP TIỀN GỐC (KHI ĐÃ CÓ DỮ LIỆU BÊN PHẢI HOẶC MẶC ĐỊNH) */
-        <div className="space-y-3">
-          {/* Thông báo nếu chưa có dữ liệu đợt thu từ cột S-AI trên Google Sheet */}
-          {historyBlocks.length === 0 && (
-            <div className="bg-amber-50/90 border border-amber-200 text-amber-800 rounded-xl p-3 px-4 text-xs font-semibold flex items-center justify-between gap-2 shadow-sm">
-              <div className="flex items-center gap-2">
-                <AlertCircle size={16} className="text-amber-600 shrink-0" />
-                <span>
-                  Chưa có dữ liệu đợt thu ở cột S đến AI trên Google Sheet. Đang hiển thị Lần 1 mặc định để Phụ huynh/Học sinh có thể xem và nộp học phí.
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="overflow-x-auto">
+        /* CHẾ ĐỘ XEM 2: BẢNG NHẬT KÝ NỘP TIỀN GỐC */
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wider">
@@ -609,7 +595,7 @@ if (!isAuthorizedV) {
                                   title="Phụ huynh / GV nhấp vào đây để hiển thị mã QR chuyển khoản"
                                 >
                                   <AlertCircle size={14} className="text-red-600" />
-                                  <span>Chưa nộp</span>
+                                  <span>Nộp ngay</span>
                                 </button>
                               )}
                             </td>
@@ -628,7 +614,6 @@ if (!isAuthorizedV) {
               </tbody>
             </table>
           </div>
-        </div>
         </div>
       )}
 
