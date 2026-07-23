@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppData } from '../types';
-import { verifyBanquyen } from './verifyadmin';
+import { verifyBanquyen, lookupTeacherByIDGV } from './verifyadmin';
 import { allcheck } from '../src/utils';
 import { 
   GraduationCap, 
@@ -91,6 +91,37 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
     } catch (err) {
       console.error(err);
       alert("Lỗi kết nối khi xác minh tài khoản!");
+    }
+  };
+
+  const handleStudentLookupIDGV = async () => {
+    const inputIdgv = prompt("DÀNH CHO HỌC SINH / PHỤ HUYNH:\nNhập Số điện thoại IDGV của Thầy/Cô giáo để xem lớp học:", data.idgv || "");
+    if (!inputIdgv || !inputIdgv.trim()) return;
+
+    try {
+      const res = await lookupTeacherByIDGV(inputIdgv.trim());
+      if (res.success && res.linkScript) {
+        const updatedData: AppData = {
+          ...data,
+          idgv: res.idgv || inputIdgv.trim(),
+          fullname: res.fullname || data.fullname,
+          mon: res.mon || data.mon,
+          idmon: res.idmon || data.idmon,
+          licenseStatus: res.licenseStatus || data.licenseStatus,
+          linkScript: res.linkScript,
+          sheetLink: res.linkScript
+        };
+        onUpdate(updatedData);
+        if (onRefreshData) {
+          await onRefreshData();
+        }
+        alert(`Thành công! Đã kết nối sang Lớp học của Giáo viên: ${res.fullname || inputIdgv} (${res.mon || 'Môn học'})!`);
+      } else {
+        alert(res.message || `Không tìm thấy IDGV: ${inputIdgv}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi kết nối khi tra cứu IDGV!");
     }
   };
   
@@ -205,6 +236,30 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
             Tất cả các chức năng được thiết kế trực quan, vận hành mượt mà ngay trên thanh menu bên trái của Thầy Cô.
           </p>
         </div>
+      </div>
+
+      {/* Banner dành riêng cho Học sinh & Phụ huynh Tra cứu theo IDGV */}
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-6 text-white shadow-lg shadow-emerald-100/60 flex flex-col md:flex-row items-center justify-between gap-5 border border-emerald-500/30">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/30 shadow-inner">
+            <GraduationCap size={26} className="text-white" />
+          </div>
+          <div>
+            <div className="inline-block px-2.5 py-0.5 bg-emerald-400/20 text-emerald-100 text-[10px] font-black uppercase tracking-wider rounded-md mb-1 border border-emerald-300/30">
+              Dành cho Học sinh & Phụ huynh
+            </div>
+            <h3 className="text-lg font-black text-white">Tra Cứu Lớp Học & Học Phí Theo IDGV Giáo Viên</h3>
+            <p className="text-xs text-emerald-100 mt-1 leading-relaxed">
+              Đang kết nối tới dữ liệu Giáo viên: <span className="font-extrabold text-white bg-white/20 px-2 py-0.5 rounded-md">{data.fullname || data.idgv || 'Mặc định Admin'}</span> (IDGV: <span className="font-mono font-extrabold text-yellow-300">{data.idgv || 'Chưa nhập'}</span>)
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleStudentLookupIDGV}
+          className="px-5 py-3 bg-white text-emerald-800 hover:bg-emerald-50 font-black text-xs rounded-2xl shadow-md transition-all flex items-center gap-2 shrink-0 cursor-pointer active:scale-95 border border-white hover:scale-105"
+        >
+          <span>🔍 Tra Cứu / Đổi IDGV Thầy Cô</span>
+        </button>
       </div>
 
 
