@@ -453,7 +453,11 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
           onClick={() => setShowQrModal(false)}
           className="w-full mt-5 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all text-sm"
         >
-          Hệ thống sẽ tự động nâng cấp VIP cho thầy cô nhé! Cảm ơn!
+          <div className="flex justify-between">
+            <span className="text-amber-700">Hệ thống sẽ tự động nâng cấp VIP cho thầy cô</span>
+            <span className="font-semibold">Cảm ơn thầy cô đã tin tưởng</span>
+          </div>
+         
         </button>
       </motion.div>
     </div>
