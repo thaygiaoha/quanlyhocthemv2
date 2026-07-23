@@ -136,7 +136,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onUpdate, onRefreshData }) 
     {
       title: "Tạo QR thu học phí tự động",
       description: "Giải pháp chuyển khoản rảnh tay: Tự động quét thông tin từ Google Sheets hoặc file Excel để sinh mã QR VietQR kèm chính xác số tiền và cú pháp định danh của từng học sinh.",
-      features: ["Tích hợp VietQR chuẩn", "Tạo QR từ Excel", "Tạo QR từ Google sheet", "Bảo mật tài khoản", "Cần tích hợp VietQR hoặc SePay(Dễ làm)"],
+      features: ["Tích hợp VietQR chuẩn", "Tạo QR từ Excel", "Tạo QR từ Google sheet", "Bảo mật tài khoản", "Cần tích hợp VietQR hoặc nên dùng SePay(Dễ làm, không cần code)"],
       icon: QrCode,
       color: "from-pink-500 via-rose-500 to-amber-500",
       shadow: "shadow-rose-100",
