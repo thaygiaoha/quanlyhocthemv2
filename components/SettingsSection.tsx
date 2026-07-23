@@ -411,7 +411,7 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ data, onUpdate }) => 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Số tài khoản ngân hàng (bankAccountNo)</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Số tài khoản ngân hàng</label>
                 <input
                   type="text"
                   placeholder="Ví dụ: 104887594225 hoặc 0988948882"
