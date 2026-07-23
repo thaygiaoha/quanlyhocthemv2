@@ -135,9 +135,21 @@ export const fetchFromSheet = async (url: string): Promise<any> => {
   }
 };
 
-export const syncSettingsToSheet = async (url: string, password: string, fees?: FeeConfig[]): Promise<any> => {
+export const syncSettingsToSheet = async (
+  url: string, 
+  password: string, 
+  fees?: FeeConfig[],
+  bankData?: { bankId?: string; bankAccountNo?: string; bankAccountName?: string }
+): Promise<any> => {
   try {
-    await securePost(url, { action: 'updateSettings', password, fees });
+    await securePost(url, { 
+      action: 'updateSettings', 
+      password, 
+      fees,
+      bankId: bankData?.bankId,
+      bankAccountNo: bankData?.bankAccountNo,
+      bankAccountName: bankData?.bankAccountName
+    });
     return { success: true };
   } catch (error) {
     throw error;
