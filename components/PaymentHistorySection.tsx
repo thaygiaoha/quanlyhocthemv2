@@ -126,7 +126,7 @@ const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data, onUpdate, 
     const bankId = data.bankId || 'Vietinbank';
     const bankAccountNo = data.bankAccountNo || '104887594225';
     const bankAccountName = data.bankAccountName || 'NGUYEN VAN HA';
-    const content = `SEVQR ${student.code || student.stt} L${lan}`;
+    const content = `SEVQR ${student.code || student.stt} L${lan} ${student.name} nop tien `;
 
     const qrUrl = `https://img.vietqr.io/image/${bankId}-${bankAccountNo}-compact2.png?amount=${cleanAmount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(bankAccountName)}`;
 
@@ -719,7 +719,7 @@ if (!isAuthorizedV) {
                 href={qrModalData.qrUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                download={`QR_HocPhi_${qrModalData.student.code || qrModalData.student.stt}_L${qrModalData.lan}.png`}
+                download={`QR_HocPhi_${qrModalData.student.code || ""}_L${qrModalData.lan}_${qrModalData.student.name}.png`}
                 className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Download size={14} />
