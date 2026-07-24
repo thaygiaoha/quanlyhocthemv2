@@ -948,7 +948,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                     <div className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3 text-left animate-in fade-in duration-200">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                         <Lock size={14} className="text-indigo-600 animate-bounce" />
-                        <span>Mật khẩu Admin để tạo mã QR</span>
+                        <span>Mật khẩu Admin Ô C2 để tạo mã QR</span>
                       </div>
                       <input
                         type="password"
