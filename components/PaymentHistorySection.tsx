@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Search, CheckCircle2, AlertCircle, Trash2, Loader2, Lock, QrCode, Copy, Download, X, CreditCard } from 'lucide-react';
+import { Search, CheckCircle2, AlertCircle, Trash2, Loader2, Lock, QrCode, Copy, Download, FileText, X, CreditCard } from 'lucide-react';
 import { AppData } from '../types';
 import { allcheck } from '../src/utils/mathHelpers';
 import { safeName } from './verifyadmin';
+import { generateQrUrlHocThem, generateQrContent, downloadSingleQrImage, downloadSingleQrPdf } from './QRcode';
 
 interface PaymentHistoryProps {
   data: AppData;
@@ -127,10 +128,23 @@ const PaymentHistorySection: React.FC<PaymentHistoryProps> = ({ data, onUpdate, 
     const bankId = data.bankId || 'Vietinbank';
     const bankAccountNo = data.bankAccountNo || '104887594225';
     const bankAccountName = data.bankAccountName || 'NGUYEN VAN HA';
-    const sname = safeName(student.name || "");
-    const content = `SEVQR ${student.code || student.stt} L${lan} ${sname} nop tien `;
 
-    const qrUrl = `https://img.vietqr.io/image/${bankId}-${bankAccountNo}-compact2.png?amount=${cleanAmount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(bankAccountName)}`;
+    const qrConfig = {
+      bankId,
+      bankAccountNo,
+      bankAccountName,
+      student: {
+        name: student.name || "",
+        code: student.code || student.stt || "",
+        class: selectedClass
+      },
+      amount: cleanAmount,
+      lan,
+      type: 'hocthem' as const
+    };
+
+    const content = generateQrContent(qrConfig);
+    const qrUrl = generateQrUrlHocThem(bankId, bankAccountNo, bankAccountName, qrConfig.student, cleanAmount, lan);
 
     setQrModalData({
       student,
@@ -717,16 +731,48 @@ if (!isAuthorizedV) {
 
             {/* Footer */}
             <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0">
-              <a
-                href={qrModalData.qrUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                download={`QR_HocPhi_${qrModalData.student.code || ""}_L${qrModalData.lan}_${qrModalData.student.name}.png`}
+              <button
+                onClick={() => {
+                  downloadSingleQrPdf({
+                    bankId: qrModalData.bankId,
+                    bankAccountNo: qrModalData.bankAccountNo,
+                    bankAccountName: qrModalData.bankAccountName,
+                    student: {
+                      name: qrModalData.student.name || "",
+                      code: qrModalData.student.code || qrModalData.student.stt || "",
+                      class: selectedClass
+                    },
+                    amount: qrModalData.amount,
+                    lan: qrModalData.lan,
+                    type: 'hocthem'
+                  });
+                }}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+              >
+                <FileText size={14} />
+                Tải Phiếu PDF
+              </button>
+              <button
+                onClick={() => {
+                  downloadSingleQrImage({
+                    bankId: qrModalData.bankId,
+                    bankAccountNo: qrModalData.bankAccountNo,
+                    bankAccountName: qrModalData.bankAccountName,
+                    student: {
+                      name: qrModalData.student.name || "",
+                      code: qrModalData.student.code || qrModalData.student.stt || "",
+                      class: selectedClass
+                    },
+                    amount: qrModalData.amount,
+                    lan: qrModalData.lan,
+                    type: 'hocthem'
+                  });
+                }}
                 className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Download size={14} />
                 Tải QR về
-              </a>
+              </button>
               <button
                 onClick={() => setQrModalData(null)}
                 className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
