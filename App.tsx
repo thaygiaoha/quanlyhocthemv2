@@ -35,29 +35,34 @@ const App: React.FC = () => {
   }, [view]);
 
   // 1. Khởi tạo dữ liệu: Ưu tiên lấy từ LocalStorage
-  const [data, setData] = useState<AppData>(() => {
-    const saved = localStorage.getItem('hocphi_data');
-    let parsed: any = null;
-    if (saved) {
-      try {
-        parsed = JSON.parse(saved);
-        if (!parsed.sheetLink || parsed.sheetLink.includes('AKfycbxU1gFzMDIzYbWxAh70658gBw6czUAhyhud7VqbZWMD1OYlZfqDR5M7W7wfxz831e3gXA')) {
-          parsed.sheetLink = 'https://script.google.com/macros/s/AKfycbwlglx696Wr0BCj8SMAvwh1hlfFg66uemInbxI2W0TdE96wY67eZx_AAxxD5RJnl04NXg/exec';
-        }
-      } catch (e) {
-        console.error("Lỗi dữ liệu LocalStorage:", e);
-      }
+const [data, setData] = useState<AppData>(() => {
+  const saved = localStorage.getItem('hocphi_data');
+  // Link Apps Script dự phòng / mặc định mới nhất
+  const urltam = "https://script.google.com/macros/s/AKfycbwFrnJ4bJETFmGZwUlU_VmV9yDK4HOmTrFQBiwBZB4hotffr_VOSrFfsghn1hGdWWOM/exec";
+  let parsed: any = null;
+  if (saved) {
+    try {
+      parsed = JSON.parse(saved);
+    } catch (e) {
+      console.error("Lỗi dữ liệu LocalStorage:", e);
     }
-    const initial: AppData = parsed || getAppData();
-    const savedIdgv = localStorage.getItem('saved_idgv');
-    if (savedIdgv && (!initial.idgv || !initial.idgv.trim())) {
-      initial.idgv = savedIdgv;
-    }
-    if (!initial.sheetLink || !initial.sheetLink.trim()) {
-      initial.sheetLink = 'https://script.google.com/macros/s/AKfycbwlglx696Wr0BCj8SMAvwh1hlfFg66uemInbxI2W0TdE96wY67eZx_AAxxD5RJnl04NXg/exec';
-    }
-    return initial;
-  });
+  }
+  
+  const initial: AppData = parsed || getAppData();
+  
+  // Giữ lại IDGV đã lưu nếu trong object bị trống
+  const savedIdgv = localStorage.getItem('saved_idgv');
+  if (savedIdgv && !initial.idgv) {
+    initial.idgv = savedIdgv;
+  }
+
+  // Đảm bảo Link Script mặc định luôn tồn tại
+  if (!initial.sheetLink || !initial.sheetLink.trim()) {
+    initial.sheetLink = urltam;
+  }
+  
+  return initial;
+});
 
   // 2307them2: Kiểm tra trạng thái đã kết nối Link Script
   const hasSheetLink = Boolean(data.sheetLink && data.sheetLink.trim() !== '');
@@ -71,55 +76,60 @@ const App: React.FC = () => {
 
   // 2. Hàm kéo dữ liệu từ tất cả các Sheet về App (tự động đính kèm IDGV đã lưu)
   const refreshDataFromCloud = async (link: string, showAlert: boolean = false) => {
-    if (!link) return;
-    setIsRefreshing(true);
-    try {
-      const activeIdgv = data.idgv || localStorage.getItem('saved_idgv') || '';
-      const url = activeIdgv ? `${link}${link.indexOf('?') === -1 ? '?' : '&'}idgv=${encodeURIComponent(activeIdgv)}` : link;
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const cloudData = await response.json();
+  if (!link) return;
+  setIsRefreshing(true);
+  try {
+    const activeIdgv = data.idgv || localStorage.getItem('saved_idgv') || '';
+    const url = activeIdgv 
+      ? `${link}${link.indexOf('?') === -1 ? '?' : '&'}idgv=${encodeURIComponent(activeIdgv)}` 
+      : link;
       
-      if (cloudData && cloudData.sheets) {
-        const effectiveLinkScript = (cloudData.linkScript && String(cloudData.linkScript).trim() !== '')
-          ? String(cloudData.linkScript).trim()
-          : (data.sheetLink || link);
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const cloudData = await response.json();
+    
+    if (cloudData && cloudData.sheets) {
+      const effectiveLinkScript = (cloudData.linkScript && String(cloudData.linkScript).trim() !== '')
+        ? String(cloudData.linkScript).trim()
+        : (data.sheetLink || link);
 
+      // Cập nhật State dạng Functional Update để bảo toàn thông tin cũ
+      setData((prevData) => {
         const updatedData: AppData = { 
-          ...data, 
-          sheets: cloudData.sheets, 
-          passwordC2: cloudData.password || data.passwordC2,
-          licenseStatus: (cloudData.licenseStatus !== undefined && cloudData.licenseStatus !== '') ? cloudData.licenseStatus : data.licenseStatus,
-          fullname: (cloudData.fullname !== undefined && cloudData.fullname !== '') ? cloudData.fullname : data.fullname,
-          mon: (cloudData.mon !== undefined && cloudData.mon !== '') ? cloudData.mon : data.mon,
-          idmon: (cloudData.idmon !== undefined && cloudData.idmon !== '') ? cloudData.idmon : data.idmon,
+          ...prevData, 
+          sheets: cloudData.sheets || prevData.sheets, 
+          passwordC2: cloudData.password || prevData.passwordC2,
+          licenseStatus: cloudData.licenseStatus || prevData.licenseStatus,
+          fullname: cloudData.fullname || prevData.fullname,
+          mon: cloudData.mon || prevData.mon,
+          idmon: cloudData.idmon || prevData.idmon,
           linkScript: effectiveLinkScript,
-          idgv: activeIdgv || cloudData.idgv || data.idgv || '',
+          idgv: activeIdgv || cloudData.idgv || prevData.idgv,
           sheetLink: effectiveLinkScript 
         };
-        setData(updatedData);
+        
+        // Lưu lại ngay vào localStorage
         localStorage.setItem('hocphi_data', JSON.stringify(updatedData));
         if (updatedData.idgv) {
           localStorage.setItem('saved_idgv', updatedData.idgv);
         }
-        
-        if (showAlert) {
-          alert("Đồng bộ thành công! Đã tải dữ liệu & kiểm tra bản quyền mới nhất từ Google Sheets.");
-        }
-      } else if (showAlert) {
-        alert("Phản hồi từ Google Sheets không có dữ liệu phù hợp.");
-      }
-    } catch (err: any) {
-      console.warn("Đồng bộ dữ liệu Cloud chưa hoàn tất (Đang ở chế độ Local):", err?.message || err);
+        return updatedData;
+      });
+      
       if (showAlert) {
-        alert("Không thể kết nối đến Google Sheets. Thầy/Cô kiểm tra lại kết nối mạng hoặc Link Script Apps Script nhé.");
+        alert("Đồng bộ thành công! Đã tải dữ liệu mới nhất từ Google Sheets.");
       }
-    } finally {
-      setIsRefreshing(false);
     }
-  };
+  } catch (err: any) {
+    console.warn("Chế độ Offline/Local:", err?.message || err);
+    if (showAlert) {
+      alert("Không thể kết nối đến Google Sheets. Đang dùng dữ liệu lưu trữ tại máy.");
+    }
+  } finally {
+    setIsRefreshing(false);
+  }
+};
 
   // 3. Hàm cập nhật dữ liệu khi Settings hoặc Attendance thay đổi
   const handleUpdateData = async (newData: AppData) => {
