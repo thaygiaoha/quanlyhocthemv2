@@ -483,7 +483,7 @@ if (!isAuthorizedV) {
               <thead>
                 <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wider">
                   <th className="p-4 w-16 text-center">STT</th>
-                  <th className="p-4 w-60 text-left">Họ và Tên</th>
+                  <th className="p-4 w-48 text-left">Họ và Tên</th>
                   <th className="p-4 w-20 text-center">Lớp</th>
                   <th className="p-4 w-20 text-center">Mã HS</th>
                   <th className="p-4 w-32 text-center">Thao tác</th>
@@ -502,7 +502,7 @@ if (!isAuthorizedV) {
                         <td className="p-4 text-center font-mono font-bold text-slate-400">
                           {studentSttStr}
                         </td>
-                        <td className="p-4 w-60 text-left font-bold text-slate-800">
+                        <td className="p-4 w-48 text-left font-bold text-slate-800">
                           {student.name}
                         </td>
                         <td className="p-4 text-center font-mono font-bold text-slate-500">
@@ -554,7 +554,7 @@ if (!isAuthorizedV) {
               <thead>
                 <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wider">
                   <th className="p-4 w-10 text-center">STT</th>
-                  <th className="p-4 w-50 text-center">Họ và Tên</th>
+                  <th className="p-4 w-55 text-center">Họ và Tên</th>
                   <th className="p-4 w-10 text-center">Lớp</th>
                   <th className="p-4 w-14 text-center">Mã HS</th>
                   {visibleLans.map(lan => (
@@ -571,7 +571,7 @@ if (!isAuthorizedV) {
                     return (
                       <tr key={student.code} className="hover:bg-slate-50/50 transition-colors">
                         <td className="p-4 w-10 font-mono font-bold text-slate-400 text-center">{studentSttStr}</td>
-                        <td className="p-4 w-48 font-bold text-slate-800">{student.name}</td>
+                        <td className="p-4 w-55 font-bold text-slate-800">{student.name}</td>
                         <td className="p-4 w-10 font-mono font-bold text-slate-400 text-center">{student.class}</td>
                         <td className="p-4 w-10 font-mono font-bold text-slate-400 text-center">{studentCodeStr}</td>
                         
