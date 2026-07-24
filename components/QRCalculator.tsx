@@ -82,93 +82,9 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
   const [bulkPassword, setBulkPassword] = useState('');
   const [isCheckingBulk, setIsCheckingBulk] = useState(false);
 
-  // Quản lý danh sách mật khẩu đã lưu
-  const [savedPasswords, setSavedPasswords] = useState<string[]>(() => {
-    const initial: string[] = [];
-    if (data.passwordC2 && String(data.passwordC2).trim()) {
-      initial.push(String(data.passwordC2).trim());
-    }
-    if (!initial.includes('16868688')) {
-      initial.push('16868688');
-    }
-    try {
-      const stored = localStorage.getItem('saved_qr_passwords');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          parsed.forEach((p: string) => {
-            if (p && typeof p === 'string' && p.trim() && !initial.includes(p.trim())) {
-              initial.push(p.trim());
-            }
-          });
-        }
-      }
-    } catch (e) {
-      console.error("Lỗi đọc mật khẩu đã lưu:", e);
-    }
-    return initial;
-  });
 
-  // Cập nhật danh sách khi data.passwordC2 thay đổi
-  useEffect(() => {
-    if (data.passwordC2 && String(data.passwordC2).trim()) {
-      const pwd = String(data.passwordC2).trim();
-      setSavedPasswords(prev => prev.includes(pwd) ? prev : [pwd, ...prev]);
-    }
-  }, [data.passwordC2]);
 
-  // Hàm lưu mật khẩu hợp lệ vào danh sách đã lưu
-  const savePasswordToStorage = (pwd: string) => {
-    if (!pwd || !pwd.trim()) return;
-    const clean = pwd.trim();
-    if (!savedPasswords.includes(clean)) {
-      const updated = [...savedPasswords, clean];
-      setSavedPasswords(updated);
-      try {
-        localStorage.setItem('saved_qr_passwords', JSON.stringify(updated));
-      } catch (e) {
-        console.error("Lỗi ghi mật khẩu đã lưu:", e);
-      }
-    }
-  };
-
-  // Giao diện chọn nhanh mật khẩu đã lưu
-  const renderPasswordSelector = (
-    currentVal: string,
-    onSelect: (val: string) => void
-  ) => {
-    if (savedPasswords.length === 0) return null;
-
-    return (
-      <div className="space-y-1.5 my-2">
-        <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold">
-          <span>Chọn mật khẩu đã lưu:</span>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {savedPasswords.map((pwd, idx) => {
-            const isSelected = currentVal === pwd;
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => onSelect(pwd)}
-                className={`px-2 py-1 rounded-lg text-[11px] font-mono font-bold transition-all border flex items-center gap-1 ${
-                  isSelected
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                    : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
-                }`}
-              >
-                <span>🔑</span>
-                <span>{pwd}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  // Xác minh admin chỉnh sửa ngân hàng & tự động lưu mật khẩu
+  // Xác minh admin chỉnh sửa ngân hàng
   const handleAuth = async () => {
     if (!password.trim()) {
       alert('Vui lòng nhập mật khẩu Admin Ô C2!');
@@ -180,7 +96,6 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
         const result = await verifyAdminPassword(data.sheetLink, password);
         if (result.success) {
           setIsAuthorized(true);
-          savePasswordToStorage(password);
           alert(result.message);
         } else {
           alert(result.message || 'Mật khẩu Admin không chính xác hoặc lỗi kết nối!');
@@ -208,7 +123,6 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
       if (key === "16868688" || (pwdC2 && key === pwdC2)) {       
         setIsAuthorizedV(true);
         localStorage.setItem('is_authorized_v', 'true');
-        savePasswordToStorage(password);
         alert('Xác thực thành công!');       
       } else {
         alert('Sai mật khẩu rồi nhé bạn! (^__^)');
@@ -221,7 +135,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     }
   };
 
-  // Xác thực tạo QR cá nhân & tự động lưu mật khẩu
+  // Xác thực tạo QR cá nhân
   const handleAuthIndividual = async () => {
     if (!individualPassword.trim()) {
       alert('Vui lòng nhập mật khẩu Admin!');
@@ -233,7 +147,6 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
         const result = await verifyAdminPassword(data.sheetLink, individualPassword);
         if (result.success) {
           setIsIndividualVerified(true);
-          savePasswordToStorage(individualPassword);
           alert(result.message);
         } else {
           alert(result.message || 'Mật khẩu Admin không chính xác hoặc lỗi kết nối!');
@@ -248,7 +161,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     }
   };
 
-  // Xác thực tạo QR hàng loạt & tự động lưu mật khẩu
+  // Xác thực tạo QR hàng loạt
   const handleAuthBulk = async () => {
     if (data.enableCopyrightCheck !== false && data.licenseStatus !== 'vip') {
       alert("Tính năng tạo QR hàng loạt chỉ dành cho tài khoản VIP. Vui lòng đăng ký/kích hoạt bản quyền VIP để sử dụng!");
@@ -265,7 +178,6 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
         const result = await verifyAdminPassword(data.sheetLink, bulkPassword);
         if (result.success) {
           setIsBulkVerified(true);
-          savePasswordToStorage(bulkPassword);
           alert(result.message);
         } else {
           alert(result.message || 'Mật khẩu Admin không chính xác hoặc lỗi kết nối!');
@@ -905,12 +817,11 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                     <Lock size={14} />
                     <span>Nhập mật khẩu Admin Ô C2 để chỉnh sửa cấu hình ngân hàng</span>
                   </div>
-                  {renderPasswordSelector(password, setPassword)}
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Nhập hoặc chọn mật khẩu Admin..."
+                    placeholder="Nhập mật khẩu Admin..."
                     className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                   <button
@@ -1039,7 +950,6 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                         <Lock size={14} className="text-indigo-600 animate-bounce" />
                         <span>Xác thực Admin để tạo mã QR</span>
                       </div>
-                      {renderPasswordSelector(individualPassword, setIndividualPassword)}
                       <input
                         type="password"
                         value={individualPassword}
@@ -1047,7 +957,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleAuthIndividual();
                         }}
-                        placeholder="Nhập hoặc chọn mật khẩu Admin..."
+                        placeholder="Nhập mật khẩu Admin..."
                         className="w-full p-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                       <button
@@ -1210,7 +1120,6 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                     <Lock size={14} className="text-indigo-600 animate-bounce" />
                     <span>Xác thực Admin để tạo QR hàng loạt</span>
                   </div>
-                  {renderPasswordSelector(bulkPassword, setBulkPassword)}
                   <input
                     type="password"
                     value={bulkPassword}
@@ -1218,7 +1127,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleAuthBulk();
                     }}
-                    placeholder="Nhập hoặc chọn mật khẩu Admin..."
+                    placeholder="Nhập mật khẩu Admin..."
                     className="w-full p-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                   <button
