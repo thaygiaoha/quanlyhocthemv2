@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import JSZip from 'jszip';
-import { jsPDF } from 'jspdf';
 import {
   QrCode,
   Search,
@@ -23,6 +21,14 @@ import {
 } from 'lucide-react';
 import { AppData, Student } from '../types';
 import { verifyAdminPassword, safeName } from './verifyadmin';
+import {
+  generateQrUrl as genQrUrl,
+  downloadSingleQrImage,
+  downloadSingleQrPdf,
+  downloadBulkQrImages,
+  downloadBulkQrPdfs,
+  generatePdfBlobForStudent as genPdfBlob
+} from './QRcode';
 
 interface QRCalculatorProps {
   data: AppData;
@@ -422,15 +428,23 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
   // TẠO URL VIETQR ĐỘNG
   const generateQrUrl = (student: Student, amount: number) => {
     const code = student.code || "";
-    
-    // Nếu mã không phải Chủ Nhiệm (CN) thì lấy selectedLanNop (L1, L2...)
-    const lanNopHienTai = !code.toUpperCase().startsWith("CN") ? selectedLanNop : "";
+    const isGVCN = code.toUpperCase().startsWith("CN");
+    const lanNopHienTai = !isGVCN ? selectedLanNop : "";
 
-    // Ghép chuỗi nội dung (dùng .trim() để xóa khoảng trắng thừa nếu lanNopHienTai bị rỗng)
-    const content = `SEVQR ${code} ${lanNopHienTai} nop hoc phi`.replace(/\s+/g, ' ').trim();
-    
-    const cleanAmount = String(amount || "").replace(/\D/g, "");
-    return `https://img.vietqr.io/image/${bankId}-${bankAccountNo}-compact2.png?amount=${cleanAmount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(bankAccountName)}`;    
+    return genQrUrl({
+      bankId,
+      bankAccountNo,
+      bankAccountName,
+      student: {
+        name: student.name || "",
+        code: student.code || "",
+        stt: student.stt,
+        class: student.class || selectedClass
+      },
+      amount,
+      lan: lanNopHienTai,
+      type: isGVCN ? 'gvcn' : 'hocthem'
+    });
   };
 
   // --- IN TOÀN BỘ MÃ QR HÀNG LOẠT ---
@@ -451,231 +465,28 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
   const [downloadingBulkPdf, setDownloadingBulkPdf] = useState(false);
   const [bulkPdfProgress, setBulkPdfProgress] = useState(0);
 
-  // Hàm phụ lấy tên file PDF dạng: mã HS. Họ tên không dâu.pdf
-  const getPdfFileName = (student: Student) => {
-    const rawCode = student.code ? student.code.trim() : "CHUA_CO_MA";
-    const safeNameNoAccents = student.name
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'D')
-      .replace(/[^a-zA-Z0-9\s]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    return `${rawCode}.${selectedLanNop}.${safeNameNoAccents}.pdf`;
-  };
-
-  // Hàm sinh mã PDF dạng Blob cho học sinh
-  const generatePdfBlobForStudent = async (student: Student, amount: number, qrUrl: string): Promise<Blob> => {
-    // Tải ảnh QR code và chuyển sang base64
-    const res = await fetch(qrUrl);
-    if (!res.ok) throw new Error("Không thể kết nối đến máy chủ VietQR để lấy ảnh");
-    const blob = await res.blob();
-    const base64Data = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-
-    // Tạo đối tượng jsPDF (A4 dọc: 210 x 297 mm)
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
-
-    const safeName = student.name
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'D')
-      .replace(/[^a-zA-Z0-9\s]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    const safeBankName = bankAccountName
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'D')
-      .replace(/[^a-zA-Z0-9\s]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .toUpperCase();
-
-    // 1. Vẽ dải màu trang trí phía trên (Top accent line)
-    doc.setFillColor(79, 70, 229); // màu Indigo #4f46e5 (giống theme app)
-    doc.rect(0, 0, 210, 8, 'F');
-
-    // 2. Tiêu đề trường học / Thương hiệu Thầy Hà
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(30, 41, 59); // màu xám đen slate-800
-    doc.text("SMARTEDU PRO - THAY NGUYEN VAN HA", 15, 22);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(100, 116, 139); // slate-500
-    doc.text(`Dang ky lop hoc them Thay Ha - Phone: 0988.948.882`, 15, 27);
-    doc.text(`Address: Xuan Phu - Tan Tien - Bac Ninh`, 15, 32);
-
-    // Đường gạch ngang phân cách
-    doc.setDrawColor(226, 232, 240); // slate-200
-    doc.setLineWidth(0.5);
-    doc.line(15, 36, 195, 36);
-
-    // 3. Tiêu đề phiếu thông báo học phí
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.setTextColor(30, 27, 75); // indigo-950
-    doc.text("PHIEU THONG BAO HOC PHI & MA QR", 105, 48, { align: 'center' });
-
-    // 4. Khung thông tin học sinh (Student Info Box)
-    doc.setDrawColor(226, 232, 240); // slate-200
-    doc.setFillColor(248, 250, 252); // slate-50 (nền nhẹ)
-    doc.roundedRect(15, 56, 180, 48, 3, 3, 'FD');
-
-    // Điền thông tin học sinh vào khung
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(71, 85, 105); // slate-600
-    doc.text("THONG TIN HOC VIEN:", 22, 63);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.setTextColor(15, 23, 42); // slate-900
-
-    doc.text(`Ho va ten hoc sinh:`, 22, 71);
-    doc.setFont('helvetica', 'bold');
-    doc.text(safeName.toUpperCase(), 65, 71);
-
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Ma hoc sinh:`, 22, 78);
-    doc.setFont('helvetica', 'bold');
-    doc.text(student.code || "---", 65, 78);
-
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Lop:`, 22, 85);
-    doc.setFont('helvetica', 'bold');
-    doc.text(student.class || selectedClass.replace("Lop", "Lop "), 65, 85);
-
-    doc.setFont('helvetica', 'normal');
-    doc.text(`So buoi di hoc:`, 22, 92);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${getStudentAttendedCount(student)} buoi`, 65, 92);
-
-    // Cột bên phải trong khung thông tin - Số tiền cần nộp nổi bật
-    doc.setDrawColor(199, 210, 254); // indigo-200
-    doc.setFillColor(238, 242, 255); // indigo-50
-    doc.roundedRect(120, 60, 68, 40, 2, 2, 'FD');
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(79, 70, 229); // indigo-600
-    doc.text("SO TIEN CAN NOP", 154, 67, { align: 'center' });
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(15);
-    doc.setTextColor(67, 56, 202); // indigo-700
-    const formattedAmount = `${amount.toLocaleString('vi-VN')} VND`;
-    doc.text(formattedAmount, 154, 78, { align: 'center' });
-
-    // Trạng thái chờ quét mã
-    // 1. Vẽ chấm tròn trạng thái màu Indigo (thay cho dấu chấm tròn nhấp nháy trên Web)
-    //doc.setFillColor(79, 70, 229); // Màu indigo-600
-    // Vẽ hình tròn: doc.circle(x, y, bán_kính, 'F' để lấp đầy màu)
-    // Tọa độ x tầm 128 (được căn chỉnh lùi lại để nhường chỗ cho chữ)
-    //doc.circle(124, 87.5, 1, 'F'); 
-
-    // 2. Viết chữ Trạng thái lùi sang bên cạnh chấm tròn
-    //doc.setFont('helvetica', 'normal');
-    //doc.setFontSize(8);
-    //doc.setTextColor(100, 116, 139); // slate-500
-    //doc.text("Trang thai: Cho chuyen khoan", 154, 88, { align: 'center' }); // Bỏ align center để căn lề trái đi cùng chấm tròn
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139); // slate-500
-    doc.text("Trang thai: Cho chuyen khoan", 154, 88, { align: 'center' });
-
-    // 5. Khung vẽ mã QR (QR Code Frame)
-    doc.setDrawColor(226, 232, 240); // slate-200
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(55, 112, 100, 114, 4, 4, 'FD');
-
-    // Chèn ảnh VietQR vào chính giữa
-    doc.addImage(base64Data, 'PNG', 62, 118, 86, 86);
-
-    // Dòng chú thích dưới mã QR
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(79, 70, 229); // indigo-600
-    doc.text("MA QR QUET DE THANH TOAN TU DONG", 105, 218, { align: 'center' });
-
-    // 6. Chú thích & Hướng dẫn thanh toán cuối trang
-    doc.setDrawColor(241, 245, 249); // slate-100
-    doc.setLineWidth(0.3);
-    doc.line(15, 234, 195, 234);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(51, 65, 85); // slate-700
-    const infoContent = `SEVQR ${student.code || ""} ${selectedLanNop || ""} `
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'D')
-      .replace(/[^a-zA-Z0-9\s]/g, '')
-      .substring(0, 15) + " nop hoc phi";
-    doc.text(`Noi dung chuyen khoan bat buoc:  ${infoContent.toUpperCase()}`, 105, 242, { align: 'center' });
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(100, 116, 139); // slate-500
-    doc.text("Huong dan: Phu huynh dung ung dung Ngan hang (Mobile Banking) quet ma QR nay.", 105, 250, { align: 'center' });
-    doc.text("He thong se tu dong ghi nhan so tien va nguoi nop ma khong can nhap thu cong.", 105, 255, { align: 'center' });
-
-    doc.setFont('helvetica', 'oblique');
-    doc.setFontSize(10);
-    doc.setTextColor(79, 70, 229); // indigo-600
-    doc.text("Xin tran trong cam on Quy Phu huynh hoc sinh!", 105, 268, { align: 'center' });
-
-    // Dấu ấn bảo mật SmartEdu Pro ở chân trang
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(148, 163, 184); // slate-400
-    doc.text("Phat trien boi SmartEdu Pro - Ho tro Thay co quan ly thong minh", 105, 282, { align: 'center' });
-
-    return doc.output('blob');
-  };
-
   // Hàm tải lẻ 1 ảnh QR
   const handleDownloadSingle = async (student: Student, amount: number) => {
     setDownloadingSingle(true);
     try {
-      const url = generateQrUrl(student, amount);
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Network response was not ok");
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      const safeName = student.name
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/đ/g, 'd')
-        .replace(/Đ/g, 'D')
-        .replace(/[^a-zA-Z0-9\s]/g, '')
-        .replace(/\s+/g, '_');
-      a.download = `QR_${selectedClass}_${safeName}_${amount}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
+      const code = student.code || "";
+      const isGVCN = code.toUpperCase().startsWith("CN");
+      await downloadSingleQrImage({
+        bankId,
+        bankAccountNo,
+        bankAccountName,
+        student: {
+          name: student.name || "",
+          code: student.code || "",
+          stt: student.stt,
+          class: student.class || selectedClass
+        },
+        amount,
+        lan: isGVCN ? "" : selectedLanNop,
+        type: isGVCN ? 'gvcn' : 'hocthem'
+      });
     } catch (err) {
       console.error("Lỗi khi tải ảnh QR lẻ:", err);
-      alert("Hệ thống chuyển hướng tải ảnh dự phòng. Vui lòng bấm chuột phải chọn 'Lưu hình ảnh...' hoặc giữ ảnh để tải về.");
-      window.open(generateQrUrl(student, amount), '_blank');
     } finally {
       setDownloadingSingle(false);
     }
@@ -685,16 +496,23 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
   const handleDownloadSinglePdf = async (student: Student, amount: number) => {
     setDownloadingSinglePdf(true);
     try {
-      const url = generateQrUrl(student, amount);
-      const pdfBlob = await generatePdfBlobForStudent(student, amount, url);
-      const blobUrl = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = getPdfFileName(student);
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
+      const code = student.code || "";
+      const isGVCN = code.toUpperCase().startsWith("CN");
+      await downloadSingleQrPdf({
+        bankId,
+        bankAccountNo,
+        bankAccountName,
+        student: {
+          name: student.name || "",
+          code: student.code || "",
+          stt: student.stt,
+          class: student.class || selectedClass,
+          attendedCount: getStudentAttendedCount(student)
+        },
+        amount,
+        lan: isGVCN ? "" : selectedLanNop,
+        type: isGVCN ? 'gvcn' : 'hocthem'
+      });
     } catch (err) {
       console.error("Lỗi khi tải PDF lẻ:", err);
       alert("Không thể tải file PDF. Vui lòng kiểm tra lại kết nối mạng.");
@@ -703,7 +521,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     }
   };
 
-  // Sửa hàm tải toàn bộ QR hàng loạt (ZIP) hỗ trợ đầy đủ key học sinh
+  // Hàm tải toàn bộ QR hàng loạt (ZIP)
   const handleDownloadBulk = async () => {
     if (data.enableCopyrightCheck !== false && data.licenseStatus !== 'vip') {
       alert("Tính năng tải hàng loạt QR chỉ dành cho tài khoản VIP. Vui lòng đăng ký/kích hoạt bản quyền VIP để sử dụng!");
@@ -715,22 +533,17 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
       return;
     }
 
+    const studentsToDownload = currentStudents.filter((s, idx) => selectedStudentsForBulk.has(getStudentKey(s, idx)));
+
+    if (studentsToDownload.length === 0) {
+      alert("Không tìm thấy học sinh nào được chọn trong lớp này!");
+      return;
+    }
+
     setDownloadingBulk(true);
     setBulkDownloadProgress(0);
     try {
-      const zip = new JSZip();
-      let count = 0;
-      
-      const studentsToDownload = currentStudents.filter((s, idx) => selectedStudentsForBulk.has(getStudentKey(s, idx)));
-
-      if (studentsToDownload.length === 0) {
-        alert("Không tìm thấy học sinh nào được chọn trong lớp này!");
-        setDownloadingBulk(false);
-        return;
-      }
-
-      for (const student of studentsToDownload) {
-        // Tính số tiền theo lựa chọn của người dùng
+      const items = studentsToDownload.map((student) => {
         let amount = 0;
         if (bulkAmountBasis === 'attendance') {
           amount = getStudentAmount(student);
@@ -740,39 +553,28 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
           amount = bulkCustomAmount;
         }
 
-        if (amount <= 0) continue;
+        const code = student.code || "";
+        const isGVCN = code.toUpperCase().startsWith("CN");
 
-        try {
-          const url = generateQrUrl(student, amount);
-          const res = await fetch(url);
-          if (!res.ok) throw new Error("Fetch error");
-          const blob = await res.blob();
-          
-          const safeName = student.name
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/đ/g, 'd')
-            .replace(/Đ/g, 'D')
-            .replace(/[^a-zA-Z0-9\s]/g, '')
-            .replace(/\s+/g, '_');
-          const fileName = `${student.stt || count + 1}_${safeName}_${amount}.png`;
-          zip.file(fileName, blob);
-        } catch (e) {
-          console.error(`Lỗi khi tải QR cho ${student.name}:`, e);
-        }
-        count++;
-        setBulkDownloadProgress(Math.round((count / studentsToDownload.length) * 100));
-      }
+        return {
+          bankId,
+          bankAccountNo,
+          bankAccountName,
+          student: {
+            name: student.name || "",
+            code: student.code || "",
+            stt: student.stt,
+            class: student.class || selectedClass,
+            attendedCount: getStudentAttendedCount(student)
+          },
+          amount,
+          lan: isGVCN ? "" : selectedLanNop,
+          type: isGVCN ? ('gvcn' as const) : ('hocthem' as const)
+        };
+      }).filter(item => item.amount > 0);
 
-      const content = await zip.generateAsync({ type: "blob" });
-      const blobUrl = URL.createObjectURL(content);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `Danh_Sach_Ma_QR_Hoc_Phi_${selectedClass}_${studentsToDownload.length}_HS.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
+      const zipName = `Danh_Sach_Ma_QR_Hoc_Phi_${selectedClass}_${items.length}_HS.zip`;
+      await downloadBulkQrImages(items, zipName, (percent) => setBulkDownloadProgress(percent));
       alert("Đã tạo và tải xuống tệp ZIP chứa toàn bộ mã QR của lớp thành công! 🎉");
     } catch (err) {
       console.error("Lỗi khi tải hàng loạt ZIP:", err);
@@ -783,7 +585,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
     }
   };
 
-  // Sửa hàm tải toàn bộ PDF hàng loạt dạng ZIP
+  // Hàm tải toàn bộ PDF hàng loạt dạng ZIP
   const handleDownloadBulkPdf = async () => {
     if (data.enableCopyrightCheck !== false && data.licenseStatus !== 'vip') {
       alert("Tính năng tải hàng loạt phiếu PDF chỉ dành cho tài khoản VIP. Vui lòng đăng ký/kích hoạt bản quyền VIP để sử dụng!");
@@ -795,22 +597,17 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
       return;
     }
 
+    const studentsToDownload = currentStudents.filter((s, idx) => selectedStudentsForBulk.has(getStudentKey(s, idx)));
+
+    if (studentsToDownload.length === 0) {
+      alert("Không tìm thấy học sinh nào được chọn trong lớp này!");
+      return;
+    }
+
     setDownloadingBulkPdf(true);
     setBulkPdfProgress(0);
     try {
-      const zip = new JSZip();
-      let count = 0;
-
-      const studentsToDownload = currentStudents.filter((s, idx) => selectedStudentsForBulk.has(getStudentKey(s, idx)));
-
-      if (studentsToDownload.length === 0) {
-        alert("Không tìm thấy học sinh nào được chọn trong lớp này!");
-        setDownloadingBulkPdf(false);
-        return;
-      }
-
-      for (const student of studentsToDownload) {
-        // Tính số tiền theo lựa chọn của người dùng
+      const items = studentsToDownload.map((student) => {
         let amount = 0;
         if (bulkAmountBasis === 'attendance') {
           amount = getStudentAmount(student);
@@ -820,29 +617,28 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
           amount = bulkCustomAmount;
         }
 
-        if (amount <= 0) continue;
+        const code = student.code || "";
+        const isGVCN = code.toUpperCase().startsWith("CN");
 
-        try {
-          const url = generateQrUrl(student, amount);
-          const pdfBlob = await generatePdfBlobForStudent(student, amount, url);
-          const fileName = getPdfFileName(student);
-          zip.file(fileName, pdfBlob);
-        } catch (e) {
-          console.error(`Lỗi khi tạo PDF cho ${student.name}:`, e);
-        }
-        count++;
-        setBulkPdfProgress(Math.round((count / studentsToDownload.length) * 100));
-      }
+        return {
+          bankId,
+          bankAccountNo,
+          bankAccountName,
+          student: {
+            name: student.name || "",
+            code: student.code || "",
+            stt: student.stt,
+            class: student.class || selectedClass,
+            attendedCount: getStudentAttendedCount(student)
+          },
+          amount,
+          lan: isGVCN ? "" : selectedLanNop,
+          type: isGVCN ? ('gvcn' as const) : ('hocthem' as const)
+        };
+      }).filter(item => item.amount > 0);
 
-      const content = await zip.generateAsync({ type: "blob" });
-      const blobUrl = URL.createObjectURL(content);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `Danh_Sach_Phieu_QR_PDF_${selectedClass}_${studentsToDownload.length}_HS.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
+      const zipName = `Danh_Sach_Phieu_QR_PDF_${selectedClass}_${items.length}_HS.zip`;
+      await downloadBulkQrPdfs(items, zipName, (percent) => setBulkPdfProgress(percent));
       alert("Đã tạo và tải xuống tệp ZIP chứa toàn bộ phiếu báo học phí dạng PDF thành công! 🎉");
     } catch (err) {
       console.error("Lỗi khi tải hàng loạt ZIP PDF:", err);
