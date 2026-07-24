@@ -215,16 +215,14 @@ export const verifyAdminPassword = async (
   }
 };
 
-export const safeName = (text: string): string => {
-  if (!text) return '';
-
-  return text
-    .normalize('NFD') // Tách dấu ra khỏi chữ cái gốc
-    .replace(/[\u0300-\u036f]/g, '') // Xóa các dấu vừa tách
-    .replace(/[đĐ]/g, (char) => (char === 'đ' ? 'd' : 'D')) // Xử lý đ/Đ
-    .replace(/[^a-zA-Z0-9\s]/g, ' ') // Thay ký tự đặc biệt thành khoảng trắng
-    .replace(/\s+/g, ' ') // Thu gọn nhiều khoảng trắng liên tiếp
-    .trim() // Xóa khoảng trắng 2 đầu
-    .toUpperCase(); // Chuyển toàn bộ thành IN HOA
+export const safeName = (str: string): string => {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .replace(/[^a-zA-Z0-9\s]/g, "")
+    .trim();
 };
 
