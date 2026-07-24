@@ -1040,13 +1040,7 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
                                             <div>Mã học sinh: <b>${selectedStudent.code || 'Chưa có'}</b></div>
                                             <div>Số buổi học: <b>${getStudentAttendedCount(selectedStudent)} buổi</b></div>
                                             <div>Số tiền nộp: <b>${formatCurrency(customAmount)}</b></div>
-                                            <div>Nội dung CK: <b>SEVQR ${(selectedStudent.code || selectedStudent.name || 'Hoc sinh')
-                                      .normalize('NFD')
-                                      .replace(/[\u0300-\u036f]/g, '')
-                                      .replace(/đ/g, 'd')
-                                      .replace(/Đ/g, 'D')
-                                      .replace(/[^a-zA-Z0-9\s]/g, '')
-                                      .substring(0, 15)} ${lanNopHienTai} nop hoc phi</b></div>
+                                            <div>Nội dung CK: <b>SEVQR ${(selectedStudent.code || 'Hoc sinh')} ${lanNopHienTai} ${safeName(selectedStudent.name)} nop hoc phi</b></div>
                                             <hr style="border: 0; border-top: 1px dashed #ccc; margin: 10px 0;" />
                                             <div style="font-size:11px; color:#777; text-align:center;">Phụ huynh quét mã trên ứng dụng ngân hàng để nộp tiền tự động</div>
                                           </div>
@@ -1278,9 +1272,10 @@ const QRCalculator: React.FC<QRCalculatorProps> = ({ data, onUpdate }) => {
 
                         if (amount === 0) return null; // Không hiển thị phiếu nếu học phí bằng 0
 
-                        const code = student.code || student.name || "";
+                        const code = student.code || "";
+                        const sname = safeName(student.name);
                         const lanNopHienTai = !code.toUpperCase().startsWith("CN") ? selectedLanNop : "";
-                        const transferContent = `SEVQR ${code} ${lanNopHienTai} nop hoc phi`.replace(/\s+/g, ' ').trim();
+                        const transferContent = `SEVQR ${code} ${lanNopHienTai} ${sname}nop hoc phi`.replace(/\s+/g, ' ').trim();
 
                         return (
                           <div
