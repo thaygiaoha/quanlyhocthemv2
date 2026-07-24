@@ -478,16 +478,15 @@ if (!isAuthorizedV) {
           )}
 
           {/* Bảng danh sách học sinh */}
-          {/* Bảng danh sách học sinh */}
           <div className="overflow-x-auto border border-slate-100 rounded-xl">
             <table className="w-full text-left border-collapse table-auto">
               <thead>
                 <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wider">
-                  <th className="p-3.5 w-16 text-center">STT</th>
-                  <th className="p-3.5 text-left">Họ và Tên</th>
-                  <th className="p-3.5 w-24 text-center">Lớp</th>
-                  <th className="p-3.5 w-32 text-center">Mã HS</th>
-                  <th className="p-3.5 w-36 text-center">Thao tác</th>
+                  <th className="p-3.5 w-14 text-center whitespace-nowrap">STT</th>
+                  <th className="p-3.5 w-60 text-left whitespace-nowrap">Họ và Tên</th>
+                  <th className="p-3.5 w-20 text-center whitespace-nowrap">Lớp</th>
+                  <th className="p-3.5 w-28 text-center whitespace-nowrap">Mã HS</th>
+                  <th className="p-3.5 w-36 text-center whitespace-nowrap">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
@@ -500,19 +499,19 @@ if (!isAuthorizedV) {
                         key={student.code} 
                         className={`transition-colors ${isCurrentSelected ? 'bg-emerald-50/50 font-medium' : 'hover:bg-slate-50/70'}`}
                       >
-                        <td className="p-3.5 text-center font-mono font-bold text-slate-400">
+                        <td className="p-3.5 w-14 text-center font-mono font-bold text-slate-400 whitespace-nowrap">
                           {studentSttStr}
                         </td>
-                        <td className="p-3.5 text-left font-bold text-slate-800">
+                        <td className="p-3.5 w-60 text-left font-bold text-slate-800 whitespace-nowrap">
                           {student.name}
                         </td>
-                        <td className="p-3.5 text-center font-mono font-bold text-slate-500">
+                        <td className="p-3.5 w-20 text-center font-mono font-bold text-slate-500 whitespace-nowrap">
                           {student.class}
                         </td>
-                        <td className="p-3.5 text-center font-mono font-bold text-slate-500">
+                        <td className="p-3.5 w-28 text-center font-mono font-bold text-slate-500 whitespace-nowrap">
                           {student.code}
                         </td>
-                        <td className="p-3.5 text-center">
+                        <td className="p-3.5 w-36 text-center whitespace-nowrap">
                           <button
                             type="button"
                             onClick={() => handleOpenPayForm(student)}
@@ -554,12 +553,12 @@ if (!isAuthorizedV) {
             <table className="w-full text-left border-collapse table-auto">
               <thead>
                 <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wider">
-                  <th className="p-3.5 w-16 text-center whitespace-nowrap">STT</th>
-                  <th className="p-3.5 min-w-[200px] text-left">Họ và Tên</th>
-                  <th className="p-3.5 w-24 text-center whitespace-nowrap">Lớp</th>
-                  <th className="p-3.5 w-32 text-center whitespace-nowrap">Mã HS</th>
+                  <th className="p-3.5 w-14 text-center whitespace-nowrap">STT</th>
+                  <th className="p-3.5 w-60 text-left whitespace-nowrap">Họ và Tên</th>
+                  <th className="p-3.5 w-20 text-center whitespace-nowrap">Lớp</th>
+                  <th className="p-3.5 w-28 text-center whitespace-nowrap">Mã HS</th>
                   {visibleLans.map(lan => (
-                    <th key={lan} className="p-3.5 text-center min-w-[130px] whitespace-nowrap">Lần {lan}</th>
+                    <th key={lan} className="p-3.5 text-center min-w-[125px] whitespace-nowrap">Lần {lan}</th>
                   ))}
                 </tr>
               </thead>
@@ -571,10 +570,10 @@ if (!isAuthorizedV) {
 
                     return (
                       <tr key={student.code} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="p-3.5 font-mono font-bold text-slate-400 text-center whitespace-nowrap">{studentSttStr}</td>
-                        <td className="p-3.5 font-bold text-slate-800 whitespace-nowrap">{student.name}</td>
-                        <td className="p-3.5 font-mono font-bold text-slate-400 text-center whitespace-nowrap">{student.class}</td>
-                        <td className="p-3.5 font-mono font-bold text-slate-400 text-center whitespace-nowrap">{studentCodeStr}</td>
+                        <td className="p-3.5 w-14 font-mono font-bold text-slate-400 text-center whitespace-nowrap">{studentSttStr}</td>
+                        <td className="p-3.5 w-60 font-bold text-slate-800 whitespace-nowrap">{student.name}</td>
+                        <td className="p-3.5 w-20 font-mono font-bold text-slate-400 text-center whitespace-nowrap">{student.class}</td>
+                        <td className="p-3.5 w-28 font-mono font-bold text-slate-400 text-center whitespace-nowrap">{studentCodeStr}</td>
                         
                         {visibleLans.map(lan => {
                           const record = classRecords.find((r: any) => {
