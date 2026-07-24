@@ -631,10 +631,10 @@ if (!isAuthorizedV) {
 
       {/* MODAL MÃ QR THANH TOÁN CHO PHỤ HUYNH / GV NỘP HỌC PHÍ */}
       {qrModalData && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200 my-auto">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white flex items-center justify-between">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
                   <QrCode className="w-5 h-5 text-white" />
@@ -653,7 +653,7 @@ if (!isAuthorizedV) {
             </div>
 
             {/* Body */}
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
               {/* Thông tin học sinh */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
                 <div>
@@ -716,7 +716,7 @@ if (!isAuthorizedV) {
             </div>
 
             {/* Footer */}
-            <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3">
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0">
               <a
                 href={qrModalData.qrUrl}
                 target="_blank"
